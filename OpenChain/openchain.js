@@ -90,7 +90,6 @@ app.post("/profile/create/donor/:UID", async (req, res) => {
     const { UID } = req.params;
     const { name, profileImage, bio } = req.body;
 
-    // Check the user's role in the userlist table
     const user = await userlist.findOne({ where: { UID: UID } });
     if (!user || user.Role !== "Donor") {
       return res
@@ -98,7 +97,7 @@ app.post("/profile/create/donor/:UID", async (req, res) => {
         .json({ message: "Invalid user role. Must be a donor." });
     }
 
-    // Create the profile in the dprofilelist table
+
     const newProfile = await dprofilelist.create({
       UID: UID,
       Name: name,
@@ -106,10 +105,10 @@ app.post("/profile/create/donor/:UID", async (req, res) => {
       BIO: bio,
     });
 
-    // Return the newly created profile
+   
     res.status(201).json(newProfile);
   } catch (error) {
-    // Handle any errors
+  
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
@@ -120,7 +119,6 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
     const { UID } = req.params;
     const { name, profileImage, bio, accountCert } = req.body;
 
-    // Check the user's role in the userlist table
     const user = await userlist.findOne({ where: { UID: UID } });
     if (!user || user.Role !== "Recipient") {
       return res
@@ -128,7 +126,6 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
         .json({ message: "Invalid user role. Must be a recipient." });
     }
 
-    // Create the profile in the rprofilelist table
     const newProfile = await rprofilelist.create({
       UID: UID,
       Name: name,
@@ -137,10 +134,9 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
       BIO: bio,
     });
 
-    // Return the newly created profile
     res.status(201).json(newProfile);
   } catch (error) {
-    // Handle any errors
+
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
@@ -249,7 +245,6 @@ app.post("/transact/donate", async (req, res) => {
       return res.status(404).json({ error: "Drive not found" });
     }
 
-    // Create the donation transaction
     const donation = await transactions.create({
       DonorID,
       DriveID,
