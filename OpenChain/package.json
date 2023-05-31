@@ -1,0 +1,24 @@
+{
+  "name": "smartdeeds-api",
+  "version": "1.0.0",
+  "description": "\"SMARTDEEDS API is a powerful integration that leverages the capabilities of ChatGPT, enabling natural language processing and intelligent conversation features in your app. With SMARTDEEDS API, you can easily incorporate chat-based functionality, interactive dialogs, and personalized user experiences.",
+  "main": "smartdeeds.js",
+  "scripts": {
+    "devstart": "nodemon openchain.js"
+  },
+  "author": "Neilson Diñoso",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "dotenv": "^16.1.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.3.3",
+    "openai": "^3.2.1",
+    "sequelize": "^6.31.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
