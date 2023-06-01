@@ -3,15 +3,15 @@ const jwt = require("jsonwebtoken");
 const express = require("express");
 const mysql = require("mysql");
 const bodyParser = require("body-parser");
+const Recipient = require("./models/Recepient");
+const CreateRecepient = require("./models/Recepient");
+const Donor = require("./models/Dono");
 const DonoDrive = require("./models/DonoDrive");
 const achievements = require("./models/achievements");
 const achievers = require("./models/achievers");
 const Badgelist = require("./models/badgelist");
 const transactions = require("./models/transactions");
-const userlist = require("./models/userlist");
-const dprofilelist = require("./models/dprofilelist");
-const rprofilelist = require("./models/rprofilelist");
-const bcrypt = require("bcrypt");
+
 const app = express();
 
 app.use(bodyParser.json({ limit: "50mb" }));
@@ -28,114 +28,51 @@ const connection = mysql.createConnection({
 app.get("/", (req, res) => {
   res.send("OpenChain API is now live and running ^-^!");
 });
-//login
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// POST RR1
+//NGO / Recepient Register
+app.post("/register/recepient", async (req, res) => {
+  console.log("Received request to create user:", req.body); // Add this line to see the request body
+  const { Name, AccountImage, AccountMeta, AccountCert, BIO } = req.body;
 
-    const user = await userlist.findOne({ where: { email: email } });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    // Main token
-    const accessToken = jwt.sign(
-      { email: user.email, role: user.Role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+  try {
+    const Recepient = await CreateRecepient.create({
+      Name,
+      AccountImage,
+      AccountMeta,
+      AccountCert,
+      BIO,
+    });
+    const token = jwt.sign(
+      { userId: Recepient.AccountID },
+      process.env.JWT_SECRET
     );
-    // Refresh token
-    const refreshToken = jwt.sign(
-      { email: user.email, role: user.Role },
-      process.env.REFRESH_JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.json({ Token: accessToken, Token1: refreshToken });
+    console.log("Created user:", Recipient);
+    res.status(201).json({ message: "User created successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Failed to create user" });
   }
 });
+// POST RD1
+app.post("/register/donor", async (req, res) => {
+  console.log("Received request to create user:", req.body); // Add this line to see the request body
+  const { Name, DonorImage, DonorMeta, BIO } = req.body;
 
-// POST
-//User / Register User
-app.post("/register", async (req, res) => {
   try {
-    const { email, password, metaData, role } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await userlist.create({
-      email: email,
-      password: hashedPassword,
-      MetaData: metaData,
-      Role: role,
+    const Dono = await Donor.create({
+      Name,
+      DonorImage,
+      DonorMeta,
+      BIO,
     });
-
-    res.status(201).json(newUser);
+    const token = jwt.sign({ userId: Donor.DonorID }, process.env.JWT_SECRET);
+    console.log("Created user:", Donor);
+    res.status(201).json({ message: "User created successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Failed to create user" });
   }
 });
-
-app.post("/profile/create/donor/:UID", async (req, res) => {
-  try {
-    const { UID } = req.params;
-    const { name, profileImage, bio } = req.body;
-
-    const user = await userlist.findOne({ where: { UID: UID } });
-    if (!user || user.Role !== "Donor") {
-      return res
-        .status(400)
-        .json({ message: "Invalid user role. Must be a donor." });
-    }
-
-    const newProfile = await dprofilelist.create({
-      UID: UID,
-      Name: name,
-      DProfileImage: profileImage,
-      BIO: bio,
-    });
-
-    res.status(201).json(newProfile);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-app.post("/profile/create/recipient/:UID", async (req, res) => {
-  try {
-    const { UID } = req.params;
-    const { name, profileImage, bio, accountCert } = req.body;
-
-    const user = await userlist.findOne({ where: { UID: UID } });
-    if (!user || user.Role !== "Recipient") {
-      return res
-        .status(400)
-        .json({ message: "Invalid user role. Must be a recipient." });
-    }
-
-    const newProfile = await rprofilelist.create({
-      UID: UID,
-      Name: name,
-      RProfileImage: profileImage,
-      AccountCert: accountCert,
-      BIO: bio,
-    });
-
-    res.status(201).json(newProfile);
-  } catch (error) {
-    // Handle any errors
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
 // POST DC1
 app.post("/donodrive/create", async (req, res) => {
   try {
