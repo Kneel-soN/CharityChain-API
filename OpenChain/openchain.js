@@ -131,7 +131,6 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
 
     res.status(201).json(newProfile);
   } catch (error) {
-    // Handle any errors
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
