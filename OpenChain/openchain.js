@@ -236,7 +236,7 @@ app.get("/donodrive/:accountID", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
+//COMPARE UP AND DOWN ENDPOINT
 // POST AC1
 app.post("/achievements/create", async (req, res) => {
   try {
