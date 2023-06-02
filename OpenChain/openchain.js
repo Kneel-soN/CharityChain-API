@@ -217,6 +217,26 @@ app.get("/donodrive/get/all", async (req, res) => {
     res.status(500).json({ message: "Failed to retrieve donodrive entries" });
   }
 });
+//Dono Drive of Specific Account
+app.get("/donodrive/:accountID", async (req, res) => {
+  try {
+    const accountID = req.params.accountID;
+
+    const donoDriveRecord = await DonoDrive.findOne({
+      where: { AccountID: accountID },
+    });
+
+    if (!donoDriveRecord) {
+      return res.status(404).json({ error: "DonoDrive record not found" });
+    }
+
+    return res.json(donoDriveRecord);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST AC1
 app.post("/achievements/create", async (req, res) => {
   try {
@@ -277,7 +297,6 @@ app.post("/transact/donate", async (req, res) => {
       return res.status(404).json({ error: "Drive not found" });
     }
 
-    // Create the donation transaction
     const donation = await transactions.create({
       DonorID,
       DriveID,
@@ -315,6 +334,6 @@ app.get("/transact/drive/:driveId", async (req, res) => {
 app.listen(3000, () => {
   console.log("######################################");
   console.log("**OpenChain is running on port 3000**");
-  console.log("================Version 0=============");
+  console.log("================Version 1=============");
   console.log("######################################");
 });
