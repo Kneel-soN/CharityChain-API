@@ -19,10 +19,11 @@ app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.json());
 
 const connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "charitychain",
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 });
 
 app.get("/", (req, res) => {
@@ -290,6 +291,23 @@ app.post("/transact/donate", async (req, res) => {
     res.json(donation);
   } catch (error) {
     console.error("Error creating donation:", error);
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
+
+app.get("/transact/drive/:driveId", async (req, res) => {
+  const driveId = req.params.driveId;
+
+  try {
+    const driveTransactions = await transactions.findAll({
+      where: {
+        DriveID: driveId,
+      },
+    });
+
+    res.json(driveTransactions);
+  } catch (error) {
+    console.error("Error retrieving transactions:", error);
     res.status(500).json({ error: "An error occurred" });
   }
 });
