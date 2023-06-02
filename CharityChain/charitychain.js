@@ -27,7 +27,7 @@ const connection = mysql.createConnection({
 });
 
 app.get("/", (req, res) => {
-  res.send("OpenChain API is now live and running ^-^!");
+  res.send("CharityChain API is now live and running ^-^!");
 });
 //user login
 app.post("/login", async (req, res) => {
