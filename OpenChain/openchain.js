@@ -29,10 +29,10 @@ const connection = mysql.createConnection({
 app.get("/", (req, res) => {
   res.send("OpenChain API is now live and running ^-^!");
 });
-//login
+//user login
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { UID, email, password } = req.body;
 
     const user = await userlist.findOne({ where: { email: email } });
     if (!user) {
@@ -44,13 +44,13 @@ app.post("/login", async (req, res) => {
     }
     // Main token
     const accessToken = jwt.sign(
-      { email: user.email, role: user.Role },
+      { UID: user.UID, email: user.email, role: user.Role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
     // Refresh token
     const refreshToken = jwt.sign(
-      { email: user.email, role: user.Role },
+      { UID: user.UID, email: user.email, role: user.Role },
       process.env.REFRESH_JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -61,6 +61,28 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+async function authToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  console.log("Auth KEY: ", authHeader);
+  const token = authHeader && authHeader.split(" ")[1];
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decodedToken) => {
+    if (err) {
+      console.error(err);
+      return res.sendStatus(403);
+    }
+    try {
+      req.user = {
+        id: decodedToken.UID,
+      };
+      next();
+    } catch (error) {
+      console.error(error);
+      return res.sendStatus(500);
+    }
+  });
+}
 
 // POST
 //User / Register User
@@ -82,7 +104,7 @@ app.post("/register", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
+// Continue donor creation
 app.post("/profile/create/donor/:UID", async (req, res) => {
   try {
     const { UID } = req.params;
@@ -108,7 +130,7 @@ app.post("/profile/create/donor/:UID", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
+// Continue recipient creation
 app.post("/profile/create/recipient/:UID", async (req, res) => {
   try {
     const { UID } = req.params;
@@ -135,14 +157,12 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
-app.get("/rprofile/get/:accountId", async (req, res) => {
-  const accountId = req.params.accountId;
-
+// Get profile of a recipient
+app.get("/rprofile/get/", authToken, async (req, res) => {
   try {
     const user = await rprofilelist.findOne({
       where: {
-        AccountID: accountId,
+        UID: req.user.id, // Use the decoded user ID from the JWT token
       },
     });
 
@@ -157,27 +177,30 @@ app.get("/rprofile/get/:accountId", async (req, res) => {
   }
 });
 
-app.get("/dprofile/get/:donorId", async (req, res) => {
-  const donorId = req.params.donorId;
-
+// get profile of a donor
+app.get("/dprofile/get/", authToken, async (req, res) => {
   try {
-    const donor = await dprofilelist.findOne({ where: { DonorID: donorId } });
-    if (!donor) {
-      return res.status(404).json({ error: "Donor not found" });
+    const user = await dprofilelist.findOne({
+      where: {
+        UID: req.user.id, // Use the decoded user ID from the JWT token
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(donor);
+    res.json(user);
   } catch (error) {
-    console.error("Error retrieving donor:", error);
+    console.error("Error retrieving user:", error);
     res.status(500).json({ error: "An error occurred" });
   }
 });
 
-// POST DC1
-app.post("/donodrive/create", async (req, res) => {
+// POST Create Dono Drive
+app.post("/donodrive/create", authToken, async (req, res) => {
   try {
     const {
-      AccountID,
       DriveName,
       Intro,
       Cause,
@@ -188,6 +211,19 @@ app.post("/donodrive/create", async (req, res) => {
       DateTarget,
       Summary,
     } = req.body;
+
+    const UID = req.user.id;
+
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
     const donoDrive = await DonoDrive.create({
       AccountID,
       DriveName,
@@ -200,13 +236,15 @@ app.post("/donodrive/create", async (req, res) => {
       DateTarget,
       Summary,
     });
+
     res.status(201).json(donoDrive);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to create donodrive entry" });
+    console.error("Error creating donodrive entry:", error);
+    res.status(500).json({ error: "Failed to create donodrive entry" });
   }
 });
-// GET DD/ALL
+
+// GET ALL DonoDrive
 app.get("/donodrive/get/all", async (req, res) => {
   try {
     const donoDrives = await DonoDrive.findAll();
@@ -216,7 +254,7 @@ app.get("/donodrive/get/all", async (req, res) => {
     res.status(500).json({ message: "Failed to retrieve donodrive entries" });
   }
 });
-//Dono Drive of Specific Account
+//DonoDrives of Specific Account
 app.get("/donodrive/:accountID", async (req, res) => {
   try {
     const accountID = req.params.accountID;
@@ -236,10 +274,28 @@ app.get("/donodrive/:accountID", async (req, res) => {
   }
 });
 //COMPARE UP AND DOWN ENDPOINT
-// POST AC1
-app.post("/achievements/create", async (req, res) => {
+// POST Create Achievement by Recipient
+app.post("/achievements/create", authToken, async (req, res) => {
   try {
-    const { AchieveName, Description, AchieveImage, AccountID } = req.body;
+    const { AchieveName, Description, AchieveImage } = req.body;
+    const UID = req.user.id;
+
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
+    // Check if the AccountID exists in the recipientlist table
+    const existingRecipient = await rprofilelist.findByPk(AccountID);
+
+    if (!existingRecipient) {
+      return res.status(404).json({ error: "Recipient not found" });
+    }
 
     const newAchievement = await achievements.create({
       AchieveName,
@@ -254,8 +310,9 @@ app.post("/achievements/create", async (req, res) => {
     res.status(500).json({ error: "Failed to create achievement" });
   }
 });
+
 // POST AA1
-app.post("/achievements/award", async (req, res) => {
+app.post("/achievements/award", authToken, async (req, res) => {
   try {
     const { DonorID, AchieveID } = req.body;
 
@@ -272,23 +329,39 @@ app.post("/achievements/award", async (req, res) => {
 });
 
 //POST BC1
-app.post("/badges/create", async (req, res) => {
-  const { BadgeImage, BadgeDesc, AccountID } = req.body;
+app.post("/badges/create", authToken, async (req, res) => {
+  const { BadgeImage, BadgeDesc } = req.body;
+  const UID = req.user.id;
+
   try {
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
     const newBadge = await Badgelist.create({
       BadgeImage,
       BadgeDesc,
       AccountID,
     });
+
     res.json(newBadge);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 // POST TD1
-app.post("/transact/donate", async (req, res) => {
-  const { DonorID, DriveID, Amount } = req.body;
+app.post("/transact/donate/:driveID", authToken, async (req, res) => {
+  const { Amount, DateDonated } = req.body;
+  const DriveID = req.params.driveID;
+  const DonorID = req.user.id; // Retrieve DonorID from the decoded auth token
 
   try {
     const drive = await DonoDrive.findOne({ where: { DriveID } });
@@ -300,6 +373,7 @@ app.post("/transact/donate", async (req, res) => {
       DonorID,
       DriveID,
       Amount,
+      DateDonated,
     });
     const updatedDrive = await DonoDrive.increment("raised", {
       by: Amount,
@@ -320,6 +394,23 @@ app.get("/transact/drive/:driveId", async (req, res) => {
     const driveTransactions = await transactions.findAll({
       where: {
         DriveID: driveId,
+      },
+    });
+
+    res.json(driveTransactions);
+  } catch (error) {
+    console.error("Error retrieving transactions:", error);
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
+
+app.get("/transact/ofdonor/:donorId", async (req, res) => {
+  const donorId = req.params.donorId;
+
+  try {
+    const driveTransactions = await transactions.findAll({
+      where: {
+        DonorID: donorId,
       },
     });
 
