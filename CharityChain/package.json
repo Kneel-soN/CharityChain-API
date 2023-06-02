@@ -1,10 +1,10 @@
 {
   "name": "smartdeeds-api",
   "version": "1.0.0",
-  "description": "\"SMARTDEEDS API is a powerful integration that leverages the capabilities of ChatGPT, enabling natural language processing and intelligent conversation features in your app. With SMARTDEEDS API, you can easily incorporate chat-based functionality, interactive dialogs, and personalized user experiences.",
+  "description": "API for CharityChain",
   "main": "smartdeeds.js",
   "scripts": {
-    "devstart": "nodemon openchain.js"
+    "devstart": "nodemon charitychain.js"
   },
   "author": "Neilson Diñoso",
   "license": "ISC",
