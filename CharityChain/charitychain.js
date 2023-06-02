@@ -423,7 +423,7 @@ app.get("/transact/ofdonor/:donorId", async (req, res) => {
 
 app.listen(3000, () => {
   console.log("######################################");
-  console.log("**OpenChain is running on port 3000**");
-  console.log("================Version 1=============");
+  console.log("*CharityChain is running on port 3000*");
+  console.log("================Version 2=============");
   console.log("######################################");
 });
