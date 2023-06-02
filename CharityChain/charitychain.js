@@ -162,7 +162,7 @@ app.get("/rprofile/get/", authToken, async (req, res) => {
   try {
     const user = await rprofilelist.findOne({
       where: {
-        UID: req.user.id, // Use the decoded user ID from the JWT token
+        UID: req.user.id,
       },
     });
 
