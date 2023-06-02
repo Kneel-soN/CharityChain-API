@@ -136,6 +136,43 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
   }
 });
 
+app.get("/rprofile/get/:accountId", async (req, res) => {
+  const accountId = req.params.accountId;
+
+  try {
+    const user = await rprofilelist.findOne({
+      where: {
+        AccountID: accountId,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error("Error retrieving user:", error);
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
+
+app.get("/dprofile/get/:donorId", async (req, res) => {
+  const donorId = req.params.donorId;
+
+  try {
+    const donor = await dprofilelist.findOne({ where: { DonorID: donorId } });
+    if (!donor) {
+      return res.status(404).json({ error: "Donor not found" });
+    }
+
+    res.json(donor);
+  } catch (error) {
+    console.error("Error retrieving donor:", error);
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
+
 // POST DC1
 app.post("/donodrive/create", async (req, res) => {
   try {
