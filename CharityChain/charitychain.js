@@ -55,7 +55,7 @@ app.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ Token: accessToken, Token1: refreshToken });
+    res.json({ Token: accessToken, RefreshToken: refreshToken });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
