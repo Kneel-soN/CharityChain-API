@@ -196,7 +196,7 @@ app.get("/dprofile/get/", authToken, async (req, res) => {
     res.status(500).json({ error: "An error occurred" });
   }
 });
-
+// START OF DONODRIVE ENDPOINTS
 // POST Create Dono Drive
 app.post("/donodrive/create", authToken, async (req, res) => {
   try {
@@ -422,7 +422,235 @@ app.get("/donodrive/get/cause/:DriveID", async (req, res) => {
   }
 });
 
-//COMPARE UP AND DOWN ENDPOINT
+app.put("/donodrive/rename/:driveId", authToken, async (req, res) => {
+  const { driveId } = req.params;
+  const { driveName } = req.body;
+
+  try {
+    const UID = req.user.id;
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Unauthorized" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
+    // Find the specific drive by DriveID
+    const drive = await DonoDrive.findByPk(driveId);
+
+    if (!drive) {
+      return res.status(404).json({ error: "Drive not found" });
+    }
+
+    // Check if AccountID matches
+    if (drive.AccountID !== AccountID) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    drive.DriveName = driveName;
+    await drive.save();
+
+    res.json(drive);
+  } catch (error) {
+    console.error("Error updating drive:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.put("/donodrive/intro/:driveId", authToken, async (req, res) => {
+  const { driveId } = req.params;
+  const { intro } = req.body;
+
+  try {
+    const UID = req.user.id;
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Unauthorized" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
+    // Find the specific drive by DriveID
+    const drive = await DonoDrive.findByPk(driveId);
+
+    if (!drive) {
+      return res.status(404).json({ error: "Drive not found" });
+    }
+
+    // Check if AccountID matches
+    if (drive.AccountID !== AccountID) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    drive.Intro = intro;
+    await drive.save();
+
+    res.json(drive);
+  } catch (error) {
+    console.error("Error updating drive:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.put("/donodrive/cause/:driveId", authToken, async (req, res) => {
+  const { driveId } = req.params;
+  const { cause } = req.body;
+
+  try {
+    const UID = req.user.id;
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Unauthorized" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
+    // Find the specific drive by DriveID
+    const drive = await DonoDrive.findByPk(driveId);
+
+    if (!drive) {
+      return res.status(404).json({ error: "Drive not found" });
+    }
+
+    // Check if AccountID matches
+    if (drive.AccountID !== AccountID) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    drive.Cause = cause;
+    await drive.save();
+
+    res.json(drive);
+  } catch (error) {
+    console.error("Error updating drive:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.put("/donodrive/driveimage/:driveId", authToken, async (req, res) => {
+  const { driveId } = req.params;
+  const { driveImage } = req.body;
+
+  try {
+    const UID = req.user.id;
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Unauthorized" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
+    // Find the specific drive by DriveID
+    const drive = await DonoDrive.findByPk(driveId);
+
+    if (!drive) {
+      return res.status(404).json({ error: "Drive not found" });
+    }
+
+    // Check if AccountID matches
+    if (drive.AccountID !== AccountID) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    drive.DriveImage = driveImage;
+    await drive.save();
+
+    res.json(drive);
+  } catch (error) {
+    console.error("Error updating drive:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.put("/donodrive/documents/:driveId", authToken, async (req, res) => {
+  const { driveId } = req.params;
+  const { documents } = req.body;
+
+  try {
+    const UID = req.user.id;
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Unauthorized" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
+    // Find the specific drive by DriveID
+    const drive = await DonoDrive.findByPk(driveId);
+
+    if (!drive) {
+      return res.status(404).json({ error: "Drive not found" });
+    }
+
+    // Check if AccountID matches
+    if (drive.AccountID !== AccountID) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    drive.Documents = documents;
+    await drive.save();
+
+    res.json(drive);
+  } catch (error) {
+    console.error("Error updating drive:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+app.put("/donodrive/summary/:driveId", authToken, async (req, res) => {
+  const { driveId } = req.params;
+  const { summary } = req.body;
+
+  try {
+    const UID = req.user.id;
+    const existingAccount = await rprofilelist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Unauthorized" });
+    }
+
+    const AccountID = existingAccount.AccountID;
+
+    // Find the specific drive by DriveID
+    const drive = await DonoDrive.findByPk(driveId);
+
+    if (!drive) {
+      return res.status(404).json({ error: "Drive not found" });
+    }
+
+    // Check if AccountID matches
+    if (drive.AccountID !== AccountID) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    drive.Summary = summary;
+    await drive.save();
+
+    res.json(drive);
+  } catch (error) {
+    console.error("Error updating drive:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+//END OF DONODRIVE ENDPOINTS
+
 // POST Create Achievement by Recipient
 app.post("/achievements/create", authToken, async (req, res) => {
   try {
