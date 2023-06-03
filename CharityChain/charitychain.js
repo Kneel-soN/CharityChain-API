@@ -245,9 +245,10 @@ app.post("/donodrive/create", authToken, async (req, res) => {
 });
 
 // GET ALL DonoDrive
+
 app.get("/donodrive/get/all", async (req, res) => {
   try {
-    const donoDrives = await DonoDrive.findAll();
+    const donoDrives = await DonoDrive.findAll({});
 
     const creatorIds = donoDrives.map((drive) => drive.AccountID);
     const recipientNames = await rprofilelist.findAll({
@@ -273,14 +274,21 @@ app.get("/donodrive/get/all", async (req, res) => {
           amount: raised,
         },
         {
-          infoTitle: "ToGo",
+          infoTitle: "To Go",
           amount: toGo,
         },
       ];
 
       return {
-        ...drive.toJSON(),
-        RecipientName: recipientName?.Name,
+        DriveID: drive.DriveID,
+        AccountID: drive.AccountID,
+        DriveName: drive.DriveName,
+        Intro: drive.Intro,
+        Cause: drive.Cause,
+        DriveImage: drive.DriveImage,
+        Documents: drive.Documents,
+        Summary: drive.Summary,
+        name: recipientName ? recipientName.Name : null,
         infolist,
       };
     });
@@ -293,7 +301,7 @@ app.get("/donodrive/get/all", async (req, res) => {
 });
 
 // DonoDrives of Specific Account
-app.get("/donodrive/:accountID", async (req, res) => {
+app.get("/donodrive/specific/:accountID", async (req, res) => {
   try {
     const accountID = req.params.accountID;
 
@@ -319,7 +327,7 @@ app.get("/donodrive/:accountID", async (req, res) => {
         amount: raised,
       },
       {
-        infoTitle: "ToGo",
+        infoTitle: "To Go",
         amount: toGo,
       },
     ];
@@ -329,8 +337,15 @@ app.get("/donodrive/:accountID", async (req, res) => {
     });
 
     const donoDriveWithInfo = {
-      ...donoDriveRecord.toJSON(),
-      RecipientName: recipientName ? recipientName.Name : null,
+      DriveID: donoDriveRecord.DriveID,
+      AccountID: donoDriveRecord.AccountID,
+      DriveName: donoDriveRecord.DriveName,
+      Intro: donoDriveRecord.Intro,
+      Cause: donoDriveRecord.Cause,
+      DriveImage: donoDriveRecord.DriveImage,
+      Documents: donoDriveRecord.Documents,
+      Summary: donoDriveRecord.Summary,
+      name: recipientName ? recipientName.Name : null,
       infolist,
     };
 
@@ -341,7 +356,7 @@ app.get("/donodrive/:accountID", async (req, res) => {
   }
 });
 
-app.get("/donodrive/specific/:DriveID", async (req, res) => {
+app.get("/donodrive/:DriveID", async (req, res) => {
   try {
     const DriveID = req.params.DriveID;
 
@@ -371,13 +386,20 @@ app.get("/donodrive/specific/:DriveID", async (req, res) => {
         amount: raised,
       },
       {
-        infoTitle: "ToGo",
+        infoTitle: "To Go",
         amount: toGo,
       },
     ];
 
     const donoDriveWithInfo = {
-      ...donoDriveRecord.toJSON(),
+      DriveID: donoDriveRecord.DriveID,
+      AccountID: donoDriveRecord.AccountID,
+      DriveName: donoDriveRecord.DriveName,
+      Intro: donoDriveRecord.Intro,
+      Cause: donoDriveRecord.Cause,
+      DriveImage: donoDriveRecord.DriveImage,
+      Documents: donoDriveRecord.Documents,
+      Summary: donoDriveRecord.Summary,
       RecipientName: recipientName ? recipientName.Name : null,
       infolist,
     };
