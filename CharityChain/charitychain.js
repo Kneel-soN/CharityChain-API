@@ -210,6 +210,7 @@ app.post("/donodrive/create", authToken, async (req, res) => {
       Raised,
       DateTarget,
       Summary,
+      Urgent,
     } = req.body;
 
     const UID = req.user.id;
@@ -235,6 +236,7 @@ app.post("/donodrive/create", authToken, async (req, res) => {
       Raised,
       DateTarget,
       Summary,
+      Urgent,
     });
 
     res.status(201).json(donoDrive);
@@ -288,6 +290,7 @@ app.get("/donodrive/get/all", async (req, res) => {
         DriveImage: drive.DriveImage,
         Documents: drive.Documents,
         Summary: drive.Summary,
+        Urgent: drive.Urgent,
         name: recipientName ? recipientName.Name : null,
         infolist,
       };
@@ -347,6 +350,7 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
           DriveImage: donoDriveRecord.DriveImage,
           Documents: donoDriveRecord.Documents,
           Summary: donoDriveRecord.Summary,
+          Urgent: donoDriveRecord.Urgent,
           name: recipientName ? recipientName.Name : null,
           infolist,
         };
@@ -407,6 +411,7 @@ app.get("/donodrive/get/cause/:DriveID", async (req, res) => {
       Documents: donoDriveRecord.Documents,
       Summary: donoDriveRecord.Summary,
       RecipientName: recipientName ? recipientName.Name : null,
+      Urgent: donoDriveRecord.Urgent,
       infolist,
     };
 

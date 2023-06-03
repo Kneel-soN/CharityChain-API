@@ -57,6 +57,9 @@ const DonoDrive = sequelize.define(
     Summary: {
       type: DataTypes.STRING,
     },
+    Urgent: {
+      type: DataTypes.TINYINT,
+    },
   },
   {
     tableName: "donodrive",
