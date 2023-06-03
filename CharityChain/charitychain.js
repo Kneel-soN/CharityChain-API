@@ -263,10 +263,25 @@ app.get("/donodrive/get/all", async (req, res) => {
       const raised = drive.Raised;
       const toGo = goal - raised;
 
+      const infolist = [
+        {
+          infoTitle: "Goal",
+          amount: goal,
+        },
+        {
+          infoTitle: "Raised",
+          amount: raised,
+        },
+        {
+          infoTitle: "ToGo",
+          amount: toGo,
+        },
+      ];
+
       return {
         ...drive.toJSON(),
         RecipientName: recipientName?.Name,
-        ToGo: toGo,
+        infolist,
       };
     });
 
@@ -277,7 +292,7 @@ app.get("/donodrive/get/all", async (req, res) => {
   }
 });
 
-//DonoDrives of Specific Account
+// DonoDrives of Specific Account
 app.get("/donodrive/:accountID", async (req, res) => {
   try {
     const accountID = req.params.accountID;
@@ -290,12 +305,90 @@ app.get("/donodrive/:accountID", async (req, res) => {
       return res.status(404).json({ error: "DonoDrive record not found" });
     }
 
-    return res.json(donoDriveRecord);
+    const goal = donoDriveRecord.Goal;
+    const raised = donoDriveRecord.Raised;
+    const toGo = goal - raised;
+
+    const infolist = [
+      {
+        infoTitle: "Goal",
+        amount: goal,
+      },
+      {
+        infoTitle: "Raised",
+        amount: raised,
+      },
+      {
+        infoTitle: "ToGo",
+        amount: toGo,
+      },
+    ];
+
+    const recipientName = await rprofilelist.findOne({
+      where: { AccountID: accountID },
+    });
+
+    const donoDriveWithInfo = {
+      ...donoDriveRecord.toJSON(),
+      RecipientName: recipientName ? recipientName.Name : null,
+      infolist,
+    };
+
+    return res.json(donoDriveWithInfo);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
+app.get("/donodrive/specific/:DriveID", async (req, res) => {
+  try {
+    const DriveID = req.params.DriveID;
+
+    const donoDriveRecord = await DonoDrive.findOne({
+      where: { DriveID: DriveID },
+    });
+
+    if (!donoDriveRecord) {
+      return res.status(404).json({ error: "DonoDrive record not found" });
+    }
+
+    const goal = donoDriveRecord.Goal;
+    const raised = donoDriveRecord.Raised;
+    const toGo = goal - raised;
+
+    const recipientName = await rprofilelist.findOne({
+      where: { AccountID: donoDriveRecord.AccountID },
+    });
+
+    const infolist = [
+      {
+        infoTitle: "Goal",
+        amount: goal,
+      },
+      {
+        infoTitle: "Raised",
+        amount: raised,
+      },
+      {
+        infoTitle: "ToGo",
+        amount: toGo,
+      },
+    ];
+
+    const donoDriveWithInfo = {
+      ...donoDriveRecord.toJSON(),
+      RecipientName: recipientName ? recipientName.Name : null,
+      infolist,
+    };
+
+    return res.json(donoDriveWithInfo);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 //COMPARE UP AND DOWN ENDPOINT
 // POST Create Achievement by Recipient
 app.post("/achievements/create", authToken, async (req, res) => {
