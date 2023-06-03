@@ -248,12 +248,35 @@ app.post("/donodrive/create", authToken, async (req, res) => {
 app.get("/donodrive/get/all", async (req, res) => {
   try {
     const donoDrives = await DonoDrive.findAll();
-    res.json(donoDrives);
+
+    const creatorIds = donoDrives.map((drive) => drive.AccountID);
+    const recipientNames = await rprofilelist.findAll({
+      where: { AccountID: creatorIds },
+    });
+
+    const DrivesWithNamesAndToGo = donoDrives.map((drive) => {
+      const recipientName = recipientNames.find(
+        (creator) => creator.AccountID === drive.AccountID
+      );
+
+      const goal = drive.Goal;
+      const raised = drive.Raised;
+      const toGo = goal - raised;
+
+      return {
+        ...drive.toJSON(),
+        RecipientName: recipientName?.Name,
+        ToGo: toGo,
+      };
+    });
+
+    res.json(DrivesWithNamesAndToGo);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to retrieve donodrive entries" });
   }
 });
+
 //DonoDrives of Specific Account
 app.get("/donodrive/:accountID", async (req, res) => {
   try {
