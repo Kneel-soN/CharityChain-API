@@ -305,51 +305,57 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
   try {
     const accountID = req.params.accountID;
 
-    const donoDriveRecord = await DonoDrive.findOne({
+    const donoDriveRecords = await DonoDrive.findAll({
       where: { AccountID: accountID },
     });
 
-    if (!donoDriveRecord) {
-      return res.status(404).json({ error: "DonoDrive record not found" });
+    if (!donoDriveRecords || donoDriveRecords.length === 0) {
+      return res.status(404).json({ error: "DonoDrive records not found" });
     }
 
-    const goal = donoDriveRecord.Goal;
-    const raised = donoDriveRecord.Raised;
-    const toGo = goal - raised;
+    const donoDrivesWithInfo = await Promise.all(
+      donoDriveRecords.map(async (donoDriveRecord) => {
+        const goal = donoDriveRecord.Goal;
+        const raised = donoDriveRecord.Raised;
+        const toGo = goal - raised;
 
-    const infolist = [
-      {
-        infoTitle: "Goal",
-        amount: goal,
-      },
-      {
-        infoTitle: "Raised",
-        amount: raised,
-      },
-      {
-        infoTitle: "To Go",
-        amount: toGo,
-      },
-    ];
+        const recipientName = await rprofilelist.findOne({
+          where: { AccountID: donoDriveRecord.AccountID },
+        });
 
-    const recipientName = await rprofilelist.findOne({
-      where: { AccountID: accountID },
-    });
+        const infolist = [
+          {
+            infoTitle: "Goal",
+            amount: goal,
+          },
+          {
+            infoTitle: "Raised",
+            amount: raised,
+          },
+          {
+            infoTitle: "To Go",
+            amount: toGo,
+          },
+        ];
 
-    const donoDriveWithInfo = {
-      DriveID: donoDriveRecord.DriveID,
-      AccountID: donoDriveRecord.AccountID,
-      DriveName: donoDriveRecord.DriveName,
-      Intro: donoDriveRecord.Intro,
-      Cause: donoDriveRecord.Cause,
-      DriveImage: donoDriveRecord.DriveImage,
-      Documents: donoDriveRecord.Documents,
-      Summary: donoDriveRecord.Summary,
-      name: recipientName ? recipientName.Name : null,
-      infolist,
-    };
+        const donoDriveWithInfo = {
+          DriveID: donoDriveRecord.DriveID,
+          AccountID: donoDriveRecord.AccountID,
+          DriveName: donoDriveRecord.DriveName,
+          Intro: donoDriveRecord.Intro,
+          Cause: donoDriveRecord.Cause,
+          DriveImage: donoDriveRecord.DriveImage,
+          Documents: donoDriveRecord.Documents,
+          Summary: donoDriveRecord.Summary,
+          name: recipientName ? recipientName.Name : null,
+          infolist,
+        };
 
-    return res.json(donoDriveWithInfo);
+        return donoDriveWithInfo;
+      })
+    );
+
+    return res.json(donoDrivesWithInfo);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error" });
