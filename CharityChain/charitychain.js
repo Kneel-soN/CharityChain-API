@@ -282,7 +282,6 @@ app.get("/donodrive/get/all", async (req, res) => {
       ];
 
       return {
-        CreatedBy: recipientName ? recipientName.Name : null,
         DriveID: drive.DriveID,
         AccountID: drive.AccountID,
         DriveName: drive.DriveName,
@@ -291,6 +290,7 @@ app.get("/donodrive/get/all", async (req, res) => {
         DriveImage: drive.DriveImage,
         Documents: drive.Documents,
         Summary: drive.Summary,
+        name: recipientName ? recipientName.Name : null,
         Urgent: drive.Urgent,
         infolist,
       };
@@ -342,7 +342,6 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
         ];
 
         const donoDriveWithInfo = {
-          CreatedBy: recipientName ? recipientName.Name : null,
           AccountID: donoDriveRecord.AccountID,
           DriveID: donoDriveRecord.DriveID,
           DriveName: donoDriveRecord.DriveName,
@@ -351,6 +350,7 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
           DriveImage: donoDriveRecord.DriveImage,
           Documents: donoDriveRecord.Documents,
           Summary: donoDriveRecord.Summary,
+          name: recipientName ? recipientName.Name : null,
           Urgent: donoDriveRecord.Urgent,
           infolist,
         };
@@ -402,7 +402,6 @@ app.get("/donodrive/get/cause/:DriveID", async (req, res) => {
     ];
 
     const donoDriveWithInfo = {
-      CreatedBy: recipientName ? recipientName.Name : null,
       DriveID: donoDriveRecord.DriveID,
       AccountID: donoDriveRecord.AccountID,
       DriveName: donoDriveRecord.DriveName,
@@ -411,6 +410,7 @@ app.get("/donodrive/get/cause/:DriveID", async (req, res) => {
       DriveImage: donoDriveRecord.DriveImage,
       Documents: donoDriveRecord.Documents,
       Summary: donoDriveRecord.Summary,
+      name: recipientName ? recipientName.Name : null,
       Urgent: donoDriveRecord.Urgent,
       infolist,
     };
