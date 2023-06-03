@@ -339,8 +339,8 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
         ];
 
         const donoDriveWithInfo = {
-          DriveID: donoDriveRecord.DriveID,
           AccountID: donoDriveRecord.AccountID,
+          DriveID: donoDriveRecord.DriveID,
           DriveName: donoDriveRecord.DriveName,
           Intro: donoDriveRecord.Intro,
           Cause: donoDriveRecord.Cause,
@@ -361,8 +361,8 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
-app.get("/donodrive/:DriveID", async (req, res) => {
+//specific Donodrive
+app.get("/donodrive/get/cause/:DriveID", async (req, res) => {
   try {
     const DriveID = req.params.DriveID;
 
