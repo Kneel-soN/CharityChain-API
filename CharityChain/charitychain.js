@@ -858,6 +858,50 @@ app.get("/transact/ofdonor/:donorId", async (req, res) => {
   }
 });
 
+app.get("/transact/all", async (req, res) => {
+  try {
+    const driveTransactions = await transactions.findAll();
+
+    const donorIds = driveTransactions.map(
+      (transaction) => transaction.DonorID
+    );
+    const donorNames = await dprofilelist.findAll({
+      where: { DonorID: donorIds },
+    });
+
+    const driveIds = driveTransactions.map(
+      (transaction) => transaction.DriveID
+    );
+    const driveNames = await DonoDrive.findAll({
+      where: { DriveID: driveIds },
+    });
+
+    const twinfo = driveTransactions.map((transaction) => {
+      const donorName = donorNames.find(
+        (donor) => donor.DonorID === transaction.DonorID
+      );
+      const driveName = driveNames.find(
+        (drive) => drive.DriveID === transaction.DriveID
+      );
+
+      return {
+        TransactionID: transaction.TransactionID,
+        DriveID: transaction.DriveID,
+        DonorID: transaction.DonorID,
+        Amount: transaction.Amount,
+        DateDonated: transaction.DateDonated,
+        From: donorName ? donorName.Name : null,
+        To: driveName ? driveName.DriveName : null,
+      };
+    });
+
+    res.json(twinfo);
+  } catch (error) {
+    console.error("Error retrieving transactions:", error);
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
+
 app.listen(3000, () => {
   console.log("######################################");
   console.log("*CharityChain is running on port 3000*");
