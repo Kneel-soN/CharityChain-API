@@ -17,7 +17,7 @@ const cors = require("cors");
 const app = express();
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3001",
   })
 );
 
@@ -977,7 +977,7 @@ app.get("/transact/all", async (req, res) => {
 
 app.listen(3000, () => {
   console.log("######################################");
-  console.log("*CharityChain is running on port 3000*");
+  console.log("*CharityChain is running on port 3001*");
   console.log("================Version 2=============");
   console.log("######################################");
 });
