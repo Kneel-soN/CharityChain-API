@@ -12,6 +12,12 @@ const userlist = require("./models/userlist");
 const dprofilelist = require("./models/dprofilelist");
 const rprofilelist = require("./models/rprofilelist");
 const bcrypt = require("bcrypt");
+const cors = require("cors");
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+  })
+);
 const app = express();
 
 app.use(bodyParser.json({ limit: "50mb" }));
@@ -366,7 +372,7 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
   }
 });
 //specific Donodrive
-app.get("/donodrive/get/cause/:DriveID", async (req, res) => {
+app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
   try {
     const DriveID = req.params.DriveID;
 
