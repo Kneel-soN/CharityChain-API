@@ -297,6 +297,7 @@ app.get("/donodrive/get/all", async (req, res) => {
         DriveImage: drive.DriveImage,
         Documents: drive.Documents,
         Summary: drive.Summary,
+        DateTarget: drive.DateTarget,
         name: recipientName ? recipientName.Name : null,
         Urgent: drive.Urgent,
         infolist,
@@ -325,7 +326,7 @@ app.get("/donodrive/get/urgent", async (req, res) => {
       where: { AccountID: creatorIds },
     });
 
-    const DrivesWithNamesAndToGo = donoDrives.map((drive) => {
+    const DriveswInfo = donoDrives.map((drive) => {
       const recipientName = recipientNames.find(
         (creator) => creator.AccountID === drive.AccountID
       );
@@ -365,7 +366,7 @@ app.get("/donodrive/get/urgent", async (req, res) => {
       };
     });
 
-    res.json(DrivesWithNamesAndToGo);
+    res.json(DriveswInfo);
   } catch (error) {
     console.error(error);
     res
@@ -379,22 +380,22 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
   try {
     const accountID = req.params.accountID;
 
-    const donoDriveRecords = await DonoDrive.findAll({
+    const drives = await DonoDrive.findAll({
       where: { AccountID: accountID },
     });
 
-    if (!donoDriveRecords || donoDriveRecords.length === 0) {
+    if (!drives || drives.length === 0) {
       return res.status(404).json({ error: "DonoDrive records not found" });
     }
 
     const donoDrivesWithInfo = await Promise.all(
-      donoDriveRecords.map(async (donoDriveRecord) => {
-        const goal = donoDriveRecord.Goal;
-        const raised = donoDriveRecord.Raised;
+      drives.map(async (drive) => {
+        const goal = drive.Goal;
+        const raised = drive.Raised;
         const toGo = goal - raised;
 
         const recipientName = await rprofilelist.findOne({
-          where: { AccountID: donoDriveRecord.AccountID },
+          where: { AccountID: drive.AccountID },
         });
 
         const infolist = [
@@ -413,16 +414,17 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
         ];
 
         const donoDriveWithInfo = {
-          AccountID: donoDriveRecord.AccountID,
-          DriveID: donoDriveRecord.DriveID,
-          DriveName: donoDriveRecord.DriveName,
-          Intro: donoDriveRecord.Intro,
-          Cause: donoDriveRecord.Cause,
-          DriveImage: donoDriveRecord.DriveImage,
-          Documents: donoDriveRecord.Documents,
-          Summary: donoDriveRecord.Summary,
+          AccountID: drive.AccountID,
+          DriveID: drive.DriveID,
+          DriveName: drive.DriveName,
+          Intro: drive.Intro,
+          Cause: drive.Cause,
+          DriveImage: drive.DriveImage,
+          Documents: drive.Documents,
+          Summary: drive.Summary,
           name: recipientName ? recipientName.Name : null,
-          Urgent: donoDriveRecord.Urgent,
+          DateTarget: drive.DateTarget,
+          Urgent: drive.Urgent,
           infolist,
         };
 
@@ -441,20 +443,20 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
   try {
     const DriveID = req.params.DriveID;
 
-    const donoDriveRecord = await DonoDrive.findOne({
+    const drive = await DonoDrive.findOne({
       where: { DriveID: DriveID },
     });
 
-    if (!donoDriveRecord) {
+    if (!drive) {
       return res.status(404).json({ error: "DonoDrive record not found" });
     }
 
-    const goal = donoDriveRecord.Goal;
-    const raised = donoDriveRecord.Raised;
+    const goal = drive.Goal;
+    const raised = drive.Raised;
     const toGo = goal - raised;
 
     const recipientName = await rprofilelist.findOne({
-      where: { AccountID: donoDriveRecord.AccountID },
+      where: { AccountID: drive.AccountID },
     });
 
     const infolist = [
@@ -473,16 +475,17 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
     ];
 
     const donoDriveWithInfo = {
-      DriveID: donoDriveRecord.DriveID,
-      AccountID: donoDriveRecord.AccountID,
-      DriveName: donoDriveRecord.DriveName,
-      Intro: donoDriveRecord.Intro,
-      Cause: donoDriveRecord.Cause,
-      DriveImage: donoDriveRecord.DriveImage,
-      Documents: donoDriveRecord.Documents,
-      Summary: donoDriveRecord.Summary,
+      DriveID: drive.DriveID,
+      AccountID: drive.AccountID,
+      DriveName: drive.DriveName,
+      Intro: drive.Intro,
+      Cause: drive.Cause,
+      DriveImage: drive.DriveImage,
+      Documents: drive.Documents,
+      Summary: drive.Summary,
       name: recipientName ? recipientName.Name : null,
-      Urgent: donoDriveRecord.Urgent,
+      DateTarget: drive.DateTarget,
+      Urgent: drive.Urgent,
       infolist,
     };
 
