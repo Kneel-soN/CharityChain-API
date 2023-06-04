@@ -309,6 +309,70 @@ app.get("/donodrive/get/all", async (req, res) => {
     res.status(500).json({ message: "Failed to retrieve donodrive entries" });
   }
 });
+// Get TOP 2 Urgent DonoDrive
+app.get("/donodrive/get/urgent", async (req, res) => {
+  try {
+    const donoDrives = await DonoDrive.findAll({
+      where: {
+        Urgent: 1,
+      },
+      order: [["DateTarget", "ASC"]],
+      limit: 2,
+    });
+
+    const creatorIds = donoDrives.map((drive) => drive.AccountID);
+    const recipientNames = await rprofilelist.findAll({
+      where: { AccountID: creatorIds },
+    });
+
+    const DrivesWithNamesAndToGo = donoDrives.map((drive) => {
+      const recipientName = recipientNames.find(
+        (creator) => creator.AccountID === drive.AccountID
+      );
+
+      const goal = drive.Goal;
+      const raised = drive.Raised;
+      const toGo = goal - raised;
+
+      const infolist = [
+        {
+          infoTitle: "Goal",
+          amount: goal,
+        },
+        {
+          infoTitle: "Raised",
+          amount: raised,
+        },
+        {
+          infoTitle: "To Go",
+          amount: toGo,
+        },
+      ];
+
+      return {
+        DateTarget: drive.DateTarget,
+        Urgent: drive.Urgent,
+        DriveID: drive.DriveID,
+        AccountID: drive.AccountID,
+        DriveName: drive.DriveName,
+        Intro: drive.Intro,
+        Cause: drive.Cause,
+        DriveImage: drive.DriveImage,
+        Documents: drive.Documents,
+        Summary: drive.Summary,
+        name: recipientName ? recipientName.Name : null,
+        infolist,
+      };
+    });
+
+    res.json(DrivesWithNamesAndToGo);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Failed to retrieve urgent donodrive entries" });
+  }
+});
 
 // DonoDrives of Specific Account
 app.get("/donodrive/specific/:accountID", async (req, res) => {
