@@ -13,6 +13,7 @@ const dprofilelist = require("./models/dprofilelist");
 const rprofilelist = require("./models/rprofilelist");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
+const { Sequelize, Op } = require("sequelize");
 
 const app = express();
 app.use(
@@ -318,6 +319,74 @@ app.get("/donodrive/get/urgent", async (req, res) => {
       },
       order: [["DateTarget", "ASC"]],
       limit: 2,
+    });
+
+    const creatorIds = donoDrives.map((drive) => drive.AccountID);
+    const recipientNames = await rprofilelist.findAll({
+      where: { AccountID: creatorIds },
+    });
+
+    const DriveswInfo = donoDrives.map((drive) => {
+      const recipientName = recipientNames.find(
+        (creator) => creator.AccountID === drive.AccountID
+      );
+
+      const goal = drive.Goal;
+      const raised = drive.Raised;
+      const toGo = goal - raised;
+
+      const infolist = [
+        {
+          infoTitle: "Goal",
+          amount: goal,
+        },
+        {
+          infoTitle: "Raised",
+          amount: raised,
+        },
+        {
+          infoTitle: "To Go",
+          amount: toGo,
+        },
+      ];
+
+      return {
+        DateTarget: drive.DateTarget,
+        Urgent: drive.Urgent,
+        DriveID: drive.DriveID,
+        AccountID: drive.AccountID,
+        DriveName: drive.DriveName,
+        Intro: drive.Intro,
+        Cause: drive.Cause,
+        DriveImage: drive.DriveImage,
+        Documents: drive.Documents,
+        Summary: drive.Summary,
+        name: recipientName ? recipientName.Name : null,
+        infolist,
+      };
+    });
+
+    res.json(DriveswInfo);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Failed to retrieve urgent donodrive entries" });
+  }
+});
+// Urgent Except the Input
+app.get("/donodrive/get/urgent-exclude", async (req, res) => {
+  const { excludeID } = req.body;
+
+  try {
+    const donoDrives = await DonoDrive.findAll({
+      where: {
+        DriveID: {
+          [Op.ne]: excludeID,
+        },
+        Urgent: 1,
+      },
+      order: [["DriveID", "ASC"]],
     });
 
     const creatorIds = donoDrives.map((drive) => drive.AccountID);
