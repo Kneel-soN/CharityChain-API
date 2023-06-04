@@ -738,7 +738,7 @@ app.post("/badges/create", authToken, async (req, res) => {
 app.post("/transact/donate/:driveID", authToken, async (req, res) => {
   const { Amount, DateDonated } = req.body;
   const DriveID = req.params.driveID;
-  const DonorID = req.user.id; // Retrieve DonorID from the decoded auth token
+  const DonorID = req.user.id;
 
   try {
     const drive = await DonoDrive.findOne({ where: { DriveID } });
@@ -763,7 +763,7 @@ app.post("/transact/donate/:driveID", authToken, async (req, res) => {
     res.status(500).json({ error: "An error occurred" });
   }
 });
-
+// Transactions of specific drive
 app.get("/transact/drive/:driveId", async (req, res) => {
   const driveId = req.params.driveId;
 
@@ -774,7 +774,40 @@ app.get("/transact/drive/:driveId", async (req, res) => {
       },
     });
 
-    res.json(driveTransactions);
+    const donorIds = driveTransactions.map(
+      (transaction) => transaction.DonorID
+    );
+    const donorNames = await dprofilelist.findAll({
+      where: { DonorID: donorIds },
+    });
+
+    const driveIds = driveTransactions.map(
+      (transaction) => transaction.DriveID
+    );
+    const driveNames = await DonoDrive.findAll({
+      where: { DriveID: driveIds },
+    });
+
+    const twinfo = driveTransactions.map((transaction) => {
+      const donorName = donorNames.find(
+        (donor) => donor.DonorID === transaction.DonorID
+      );
+      const driveName = driveNames.find(
+        (drive) => drive.DriveID === transaction.DriveID
+      );
+
+      return {
+        TransactionID: transaction.TransactionID,
+        DriveID: transaction.DriveID,
+        DonorID: transaction.DonorID,
+        Amount: transaction.Amount,
+        DateDonated: transaction.DateDonated,
+        From: donorName ? donorName.Name : null,
+        To: driveName ? driveName.DriveName : null,
+      };
+    });
+
+    res.json(twinfo);
   } catch (error) {
     console.error("Error retrieving transactions:", error);
     res.status(500).json({ error: "An error occurred" });
@@ -791,7 +824,34 @@ app.get("/transact/ofdonor/:donorId", async (req, res) => {
       },
     });
 
-    res.json(driveTransactions);
+    const donorName = await dprofilelist.findOne({
+      where: { DonorID: donorId },
+    });
+
+    const driveIds = driveTransactions.map(
+      (transaction) => transaction.DriveID
+    );
+    const driveNames = await DonoDrive.findAll({
+      where: { DriveID: driveIds },
+    });
+
+    const twinfo = driveTransactions.map((transaction) => {
+      const driveName = driveNames.find(
+        (drive) => drive.DriveID === transaction.DriveID
+      );
+
+      return {
+        TransactionID: transaction.TransactionID,
+        DriveID: transaction.DriveID,
+        DonorID: transaction.DonorID,
+        Amount: transaction.Amount,
+        DateDonated: transaction.DateDonated,
+        DonorName: donorName ? donorName.Name : null,
+        DriveName: driveName ? driveName.DriveName : null,
+      };
+    });
+
+    res.json(twinfo);
   } catch (error) {
     console.error("Error retrieving transactions:", error);
     res.status(500).json({ error: "An error occurred" });
