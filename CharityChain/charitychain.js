@@ -112,9 +112,9 @@ app.post("/register", async (req, res) => {
   }
 });
 // Continue donor creation
-app.post("/profile/create/donor/:UID", async (req, res) => {
+app.post("/profile/create/donor", async (req, res) => {
   try {
-    const { UID } = req.params;
+    const { UID } = req.body;
     const { name, profileImage, bio } = req.body;
 
     const user = await userlist.findOne({ where: { UID: UID } });
@@ -138,9 +138,9 @@ app.post("/profile/create/donor/:UID", async (req, res) => {
   }
 });
 // Continue recipient creation
-app.post("/profile/create/recipient/:UID", async (req, res) => {
+app.post("/profile/create/recipient", async (req, res) => {
   try {
-    const { UID } = req.params;
+    const { UID } = req.body;
     const { name, profileImage, bio, accountCert } = req.body;
 
     const user = await userlist.findOne({ where: { UID: UID } });
@@ -444,12 +444,12 @@ app.get("/donodrive/get/urgent-exclude", async (req, res) => {
 });
 
 // DonoDrives of Specific Account
-app.get("/donodrive/specific/:accountID", async (req, res) => {
+app.get("/donodrive/specific", async (req, res) => {
   try {
-    const accountID = req.params.accountID;
+    const AccountID = req.body.AccountID;
 
     const drives = await DonoDrive.findAll({
-      where: { AccountID: accountID },
+      where: { AccountID: AccountID },
     });
 
     if (!drives || drives.length === 0) {
@@ -507,9 +507,9 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
   }
 });
 //specific Donodrive
-app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
+app.get("/donodrive/get/drive", async (req, res) => {
   try {
-    const DriveID = req.params.DriveID;
+    const DriveID = req.body.DriveID;
 
     const drive = await DonoDrive.findOne({
       where: { DriveID: DriveID },
@@ -564,8 +564,8 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
   }
 });
 
-app.put("/donodrive/rename/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/rename", authToken, async (req, res) => {
+  const { DriveID } = req.body;
   const { driveName } = req.body;
 
   try {
@@ -581,7 +581,7 @@ app.put("/donodrive/rename/:driveId", authToken, async (req, res) => {
     const AccountID = existingAccount.AccountID;
 
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
@@ -602,8 +602,8 @@ app.put("/donodrive/rename/:driveId", authToken, async (req, res) => {
   }
 });
 
-app.put("/donodrive/intro/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/intro", authToken, async (req, res) => {
+  const { DriveID } = req.body;
   const { intro } = req.body;
 
   try {
@@ -619,7 +619,7 @@ app.put("/donodrive/intro/:driveId", authToken, async (req, res) => {
     const AccountID = existingAccount.AccountID;
 
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
@@ -640,8 +640,8 @@ app.put("/donodrive/intro/:driveId", authToken, async (req, res) => {
   }
 });
 
-app.put("/donodrive/cause/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/cause", authToken, async (req, res) => {
+  const { DriveID } = req.body;
   const { cause } = req.body;
 
   try {
@@ -657,7 +657,7 @@ app.put("/donodrive/cause/:driveId", authToken, async (req, res) => {
     const AccountID = existingAccount.AccountID;
 
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
@@ -678,8 +678,8 @@ app.put("/donodrive/cause/:driveId", authToken, async (req, res) => {
   }
 });
 
-app.put("/donodrive/driveimage/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/driveimage", authToken, async (req, res) => {
+  const { DriveID } = req.body;
   const { driveImage } = req.body;
 
   try {
@@ -695,7 +695,7 @@ app.put("/donodrive/driveimage/:driveId", authToken, async (req, res) => {
     const AccountID = existingAccount.AccountID;
 
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
@@ -716,8 +716,8 @@ app.put("/donodrive/driveimage/:driveId", authToken, async (req, res) => {
   }
 });
 
-app.put("/donodrive/documents/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/documents", authToken, async (req, res) => {
+  const { DriveID } = req.body;
   const { documents } = req.body;
 
   try {
@@ -733,7 +733,7 @@ app.put("/donodrive/documents/:driveId", authToken, async (req, res) => {
     const AccountID = existingAccount.AccountID;
 
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
@@ -753,8 +753,8 @@ app.put("/donodrive/documents/:driveId", authToken, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-app.put("/donodrive/summary/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/summary", authToken, async (req, res) => {
+  const { DriveID } = req.body;
   const { summary } = req.body;
 
   try {
@@ -770,7 +770,7 @@ app.put("/donodrive/summary/:driveId", authToken, async (req, res) => {
     const AccountID = existingAccount.AccountID;
 
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
@@ -877,9 +877,9 @@ app.post("/badges/create", authToken, async (req, res) => {
 });
 
 // POST TD1
-app.post("/transact/donate/:driveID", authToken, async (req, res) => {
+app.post("/transact/donate", authToken, async (req, res) => {
   const { Amount, DateDonated } = req.body;
-  const DriveID = req.params.driveID;
+  const DriveID = req.body.DriveID;
   const DonorID = req.user.id;
 
   try {
@@ -906,28 +906,28 @@ app.post("/transact/donate/:driveID", authToken, async (req, res) => {
   }
 });
 // Transactions of specific drive
-app.get("/transact/drive/:driveId", async (req, res) => {
-  const driveId = req.params.driveId;
+app.get("/transact/drive", async (req, res) => {
+  const DriveID = req.body.DriveID;
 
   try {
     const driveTransactions = await transactions.findAll({
       where: {
-        DriveID: driveId,
+        DriveID: DriveID,
       },
     });
 
-    const donorIds = driveTransactions.map(
+    const donorIDs = driveTransactions.map(
       (transaction) => transaction.DonorID
     );
     const donorNames = await dprofilelist.findAll({
-      where: { DonorID: donorIds },
+      where: { DonorID: donorIDs },
     });
 
-    const driveIds = driveTransactions.map(
+    const DriveIDs = driveTransactions.map(
       (transaction) => transaction.DriveID
     );
     const driveNames = await DonoDrive.findAll({
-      where: { DriveID: driveIds },
+      where: { DriveID: DriveIDs },
     });
 
     const twinfo = driveTransactions.map((transaction) => {
@@ -956,25 +956,25 @@ app.get("/transact/drive/:driveId", async (req, res) => {
   }
 });
 
-app.get("/transact/ofdonor/:donorId", async (req, res) => {
-  const donorId = req.params.donorId;
+app.get("/transact/ofdonor", async (req, res) => {
+  const donorID = req.body.donorID;
 
   try {
     const driveTransactions = await transactions.findAll({
       where: {
-        DonorID: donorId,
+        DonorID: donorID,
       },
     });
 
     const donorName = await dprofilelist.findOne({
-      where: { DonorID: donorId },
+      where: { DonorID: donorID },
     });
 
-    const driveIds = driveTransactions.map(
+    const DriveIDs = driveTransactions.map(
       (transaction) => transaction.DriveID
     );
     const driveNames = await DonoDrive.findAll({
-      where: { DriveID: driveIds },
+      where: { DriveID: DriveIDs },
     });
 
     const twinfo = driveTransactions.map((transaction) => {
@@ -1004,18 +1004,18 @@ app.get("/transact/all", async (req, res) => {
   try {
     const driveTransactions = await transactions.findAll();
 
-    const donorIds = driveTransactions.map(
+    const donorIDs = driveTransactions.map(
       (transaction) => transaction.DonorID
     );
     const donorNames = await dprofilelist.findAll({
-      where: { DonorID: donorIds },
+      where: { DonorID: donorIDs },
     });
 
-    const driveIds = driveTransactions.map(
+    const DriveIDs = driveTransactions.map(
       (transaction) => transaction.DriveID
     );
     const driveNames = await DonoDrive.findAll({
-      where: { DriveID: driveIds },
+      where: { DriveID: DriveIDs },
     });
 
     const twinfo = driveTransactions.map((transaction) => {
