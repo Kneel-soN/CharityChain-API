@@ -13,12 +13,13 @@ const dprofilelist = require("./models/dprofilelist");
 const rprofilelist = require("./models/rprofilelist");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
+
+const app = express();
 app.use(
   cors({
     origin: "http://localhost:3000",
   })
 );
-const app = express();
 
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
