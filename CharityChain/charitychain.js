@@ -18,7 +18,7 @@ const { Sequelize, Op } = require("sequelize");
 const app = express();
 app.use(
   cors({
-    origin: "http://localhost:3001",
+    origin: "http://localhost:3000",
   })
 );
 
@@ -40,25 +40,32 @@ app.get("/", (req, res) => {
 //user login
 app.post("/login", async (req, res) => {
   try {
-    const { UID, email, password } = req.body;
+    const { metadata } = req.body;
 
-    const user = await userlist.findOne({ where: { email: email } });
+    const user = await userlist.findOne({ where: { MetaData: metadata } });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+
     // Main token
     const accessToken = jwt.sign(
-      { UID: user.UID, email: user.email, role: user.Role },
+      {
+        UID: user.UID,
+        email: user.email,
+        role: user.Role,
+        MetaData: user.MetaData,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
     // Refresh token
     const refreshToken = jwt.sign(
-      { UID: user.UID, email: user.email, role: user.Role },
+      {
+        UID: user.UID,
+        email: user.email,
+        role: user.Role,
+        MetaData: user.MetaData,
+      },
       process.env.REFRESH_JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -1044,7 +1051,7 @@ app.get("/transact/all", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
+app.listen(3001, () => {
   console.log("######################################");
   console.log("*CharityChain is running on port 3001*");
   console.log("================Version 2=============");
