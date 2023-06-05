@@ -105,6 +105,15 @@ app.post("/register", async (req, res) => {
     const { email, password, metaData, role } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Check if the metadata is already registered
+    const existingUser = await userlist.findOne({
+      where: { MetaData: metaData },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "Metamask already registered" });
+    }
+
     const newUser = await userlist.create({
       email: email,
       password: hashedPassword,
