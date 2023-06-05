@@ -112,12 +112,16 @@ app.post("/register", async (req, res) => {
       Role: role,
     });
 
-    res.status(201).json(newUser);
+    // Exclude the hashed password from the response
+    const { password: _, ...uwpw } = newUser.toJSON();
+
+    res.status(201).json(uwpw);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 // Continue donor creation
 app.post("/profile/create/donor/:UID", async (req, res) => {
   try {
@@ -129,6 +133,11 @@ app.post("/profile/create/donor/:UID", async (req, res) => {
       return res
         .status(400)
         .json({ message: "Invalid user role. Must be a donor." });
+    }
+
+    const existingProfile = await dprofilelist.findOne({ where: { UID: UID } });
+    if (existingProfile) {
+      return res.status(400).json({ message: "Profile already registered." });
     }
 
     const newProfile = await dprofilelist.create({
@@ -144,6 +153,7 @@ app.post("/profile/create/donor/:UID", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 // Continue recipient creation
 app.post("/profile/create/recipient/:UID", async (req, res) => {
   try {
@@ -155,6 +165,11 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
       return res
         .status(400)
         .json({ message: "Invalid user role. Must be a recipient." });
+    }
+
+    const existingProfile = await rprofilelist.findOne({ where: { UID: UID } });
+    if (existingProfile) {
+      return res.status(400).json({ message: "Profile already registered." });
     }
 
     const newProfile = await rprofilelist.create({
@@ -171,6 +186,7 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 // Get profile of a recipient
 app.get("/rprofile/get/", authToken, async (req, res) => {
   try {
