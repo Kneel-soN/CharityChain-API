@@ -13,7 +13,7 @@ const dprofilelist = require("./models/dprofilelist");
 const rprofilelist = require("./models/rprofilelist");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
-const { Sequelize, Op } = require("sequelize");
+const { Op } = require("sequelize");
 
 const app = express();
 app.use(
@@ -237,7 +237,6 @@ app.get("/dprofile/get/", authToken, async (req, res) => {
 });
 // START OF DONODRIVE ENDPOINTS
 // POST Create Dono Drive
-//Include metadata of current user**
 app.post("/donodrive/create", authToken, async (req, res) => {
   try {
     const {
@@ -279,7 +278,16 @@ app.post("/donodrive/create", authToken, async (req, res) => {
       Urgent,
     });
 
-    res.status(201).json(donoDrive);
+    const metadata = await userlist.findOne({
+      where: { UID },
+    });
+
+    const donoDriveWithMetadata = {
+      ...donoDrive.toJSON(),
+      metadata: metadata ? metadata.MetaData : null,
+    };
+
+    res.status(201).json(donoDriveWithMetadata);
   } catch (error) {
     console.error("Error creating donodrive entry:", error);
     res.status(500).json({ error: "Failed to create donodrive entry" });
@@ -354,7 +362,6 @@ app.get("/donodrive/get/all", async (req, res) => {
 });
 
 // Get TOP 2 Urgent DonoDrive
-// add metadata **todo
 app.get("/donodrive/get/urgent", async (req, res) => {
   try {
     const donoDrives = await DonoDrive.findAll({
@@ -511,7 +518,7 @@ app.get("/donodrive/get/urgent-exclude", async (req, res) => {
   }
 });
 
-// DonoDrives of Specific Account
+// DonoDrives of Specific Account/Recipient
 app.get("/donodrive/specific/:accountID", async (req, res) => {
   try {
     const accountID = req.params.accountID;
@@ -898,7 +905,7 @@ app.post("/achievements/create", authToken, async (req, res) => {
 
     const AccountID = existingAccount.AccountID;
 
-    // Check if the AccountID exists in the recipientlist table
+    // Check of AccountID  and rprofilelist table
     const existingRecipient = await rprofilelist.findByPk(AccountID);
 
     if (!existingRecipient) {

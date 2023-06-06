@@ -29,15 +29,15 @@ const rprofilelist = sequelize.define(
     },
     RProfileImage: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     AccountCert: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     BIO: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
   },
   {
