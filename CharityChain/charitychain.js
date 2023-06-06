@@ -237,6 +237,7 @@ app.get("/dprofile/get/", authToken, async (req, res) => {
 });
 // START OF DONODRIVE ENDPOINTS
 // POST Create Dono Drive
+//Include metadata of current user**
 app.post("/donodrive/create", authToken, async (req, res) => {
   try {
     const {
@@ -286,7 +287,6 @@ app.post("/donodrive/create", authToken, async (req, res) => {
 });
 
 // GET ALL DonoDrive
-
 app.get("/donodrive/get/all", async (req, res) => {
   try {
     const donoDrives = await DonoDrive.findAll({});
@@ -296,9 +296,18 @@ app.get("/donodrive/get/all", async (req, res) => {
       where: { AccountID: creatorIds },
     });
 
+    const userIds = recipientNames.map((recipient) => recipient.UID);
+    const metadataList = await userlist.findAll({
+      where: { UID: userIds },
+    });
+
     const DrivesWithNamesAndToGo = donoDrives.map((drive) => {
       const recipientName = recipientNames.find(
         (creator) => creator.AccountID === drive.AccountID
+      );
+
+      const metadata = metadataList.find(
+        (user) => user.UID === recipientName?.UID
       );
 
       const goal = drive.Goal;
@@ -331,6 +340,7 @@ app.get("/donodrive/get/all", async (req, res) => {
         Summary: drive.Summary,
         DateTarget: drive.DateTarget,
         name: recipientName ? recipientName.Name : null,
+        metadata: metadata ? metadata.MetaData : null,
         Urgent: drive.Urgent,
         infolist,
       };
@@ -342,7 +352,9 @@ app.get("/donodrive/get/all", async (req, res) => {
     res.status(500).json({ message: "Failed to retrieve donodrive entries" });
   }
 });
+
 // Get TOP 2 Urgent DonoDrive
+// add metadata **todo
 app.get("/donodrive/get/urgent", async (req, res) => {
   try {
     const donoDrives = await DonoDrive.findAll({
@@ -358,9 +370,21 @@ app.get("/donodrive/get/urgent", async (req, res) => {
       where: { AccountID: creatorIds },
     });
 
+    const metadataPromises = recipientNames.map((recipient) => {
+      return userlist.findOne({
+        where: { UID: recipient.UID },
+      });
+    });
+
+    const metadataResults = await Promise.all(metadataPromises);
+
     const DriveswInfo = donoDrives.map((drive) => {
       const recipientName = recipientNames.find(
         (creator) => creator.AccountID === drive.AccountID
+      );
+
+      const metadata = metadataResults.find(
+        (metadata) => metadata.UID === recipientName.UID
       );
 
       const goal = drive.Goal;
@@ -394,6 +418,7 @@ app.get("/donodrive/get/urgent", async (req, res) => {
         Documents: drive.Documents,
         Summary: drive.Summary,
         name: recipientName ? recipientName.Name : null,
+        metadata: metadata ? metadata.MetaData : null,
         infolist,
       };
     });
@@ -406,6 +431,7 @@ app.get("/donodrive/get/urgent", async (req, res) => {
       .json({ message: "Failed to retrieve urgent donodrive entries" });
   }
 });
+
 // Urgent Except the Input
 app.get("/donodrive/get/urgent-exclude", async (req, res) => {
   const { excludeID } = req.body;
@@ -426,9 +452,18 @@ app.get("/donodrive/get/urgent-exclude", async (req, res) => {
       where: { AccountID: creatorIds },
     });
 
-    const DriveswInfo = donoDrives.map((drive) => {
+    const userIds = recipientNames.map((recipient) => recipient.UID);
+    const metadataList = await userlist.findAll({
+      where: { UID: userIds },
+    });
+
+    const dinfo = donoDrives.map((drive) => {
       const recipientName = recipientNames.find(
         (creator) => creator.AccountID === drive.AccountID
+      );
+
+      const metadata = metadataList.find(
+        (user) => user.UID === recipientName?.UID
       );
 
       const goal = drive.Goal;
@@ -462,11 +497,12 @@ app.get("/donodrive/get/urgent-exclude", async (req, res) => {
         Documents: drive.Documents,
         Summary: drive.Summary,
         name: recipientName ? recipientName.Name : null,
+        metadata: metadata ? metadata.MetaData : null,
         infolist,
       };
     });
 
-    res.json(DriveswInfo);
+    res.json(dinfo);
   } catch (error) {
     console.error(error);
     res
@@ -488,15 +524,29 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
       return res.status(404).json({ error: "DonoDrive records not found" });
     }
 
-    const donoDrivesWithInfo = await Promise.all(
+    const creatorIds = drives.map((drive) => drive.AccountID);
+    const recipientNames = await rprofilelist.findAll({
+      where: { AccountID: creatorIds },
+    });
+
+    const userIds = recipientNames.map((recipient) => recipient.UID);
+    const metadataList = await userlist.findAll({
+      where: { UID: userIds },
+    });
+
+    const dinfo = await Promise.all(
       drives.map(async (drive) => {
         const goal = drive.Goal;
         const raised = drive.Raised;
         const toGo = goal - raised;
 
-        const recipientName = await rprofilelist.findOne({
-          where: { AccountID: drive.AccountID },
-        });
+        const recipientName = recipientNames.find(
+          (creator) => creator.AccountID === drive.AccountID
+        );
+
+        const metadata = metadataList.find(
+          (user) => user.UID === recipientName?.UID
+        );
 
         const infolist = [
           {
@@ -513,7 +563,7 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
           },
         ];
 
-        const donoDriveWithInfo = {
+        const dinfo = {
           AccountID: drive.AccountID,
           DriveID: drive.DriveID,
           DriveName: drive.DriveName,
@@ -523,21 +573,23 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
           Documents: drive.Documents,
           Summary: drive.Summary,
           name: recipientName ? recipientName.Name : null,
+          metadata: metadata ? metadata.MetaData : null,
           DateTarget: drive.DateTarget,
           Urgent: drive.Urgent,
           infolist,
         };
 
-        return donoDriveWithInfo;
+        return dinfo;
       })
     );
 
-    return res.json(donoDrivesWithInfo);
+    return res.json(dinfo);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
 //specific Donodrive
 app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
   try {
@@ -559,6 +611,10 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
       where: { AccountID: drive.AccountID },
     });
 
+    const metadata = await userlist.findOne({
+      where: { UID: recipientName?.UID },
+    });
+
     const infolist = [
       {
         infoTitle: "Goal",
@@ -574,7 +630,7 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
       },
     ];
 
-    const donoDriveWithInfo = {
+    const dinfo = {
       DriveID: drive.DriveID,
       AccountID: drive.AccountID,
       DriveName: drive.DriveName,
@@ -584,12 +640,13 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
       Documents: drive.Documents,
       Summary: drive.Summary,
       name: recipientName ? recipientName.Name : null,
+      metadata: metadata ? metadata.MetaData : null,
       DateTarget: drive.DateTarget,
       Urgent: drive.Urgent,
       infolist,
     };
 
-    return res.json(donoDriveWithInfo);
+    return res.json(dinfo);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error" });
