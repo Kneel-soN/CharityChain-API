@@ -235,6 +235,173 @@ app.get("/dprofile/get/", authToken, async (req, res) => {
     res.status(500).json({ error: "An error occurred" });
   }
 });
+
+app.put("/profile/edit/name", authToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    const uid = req.user.id;
+
+    const donor = await dprofilelist.findOne({
+      where: { UID: uid },
+    });
+
+    if (donor) {
+      await dprofilelist.update(
+        { Name: name },
+        { where: { DonorID: donor.DonorID } }
+      );
+
+      const updatedDonor = await dprofilelist.findOne({
+        where: { DonorID: donor.DonorID },
+      });
+
+      return res.status(200).json(updatedDonor);
+    }
+
+    const account = await rprofilelist.findOne({
+      where: { UID: uid },
+    });
+
+    if (account) {
+      await rprofilelist.update(
+        { Name: name },
+        { where: { AccountID: account.AccountID } }
+      );
+
+      const updatedAccount = await rprofilelist.findOne({
+        where: { AccountID: account.AccountID },
+      });
+
+      return res.status(200).json(updatedAccount);
+    }
+
+    return res.sendStatus(404);
+  } catch (error) {
+    console.error(error);
+    return res.sendStatus(500);
+  }
+});
+
+app.put("/profile/edit/bio", authToken, async (req, res) => {
+  try {
+    const { bio } = req.body;
+    const uid = req.user.id;
+
+    const donor = await dprofilelist.findOne({
+      where: { UID: uid },
+    });
+
+    if (donor) {
+      return res.status(403).json({ message: "You are not a recipient" });
+    }
+
+    const account = await rprofilelist.findOne({
+      where: { UID: uid },
+    });
+
+    if (account) {
+      await rprofilelist.update(
+        { BIO: bio },
+        { where: { AccountID: account.AccountID } }
+      );
+
+      const updatedAccount = await rprofilelist.findOne({
+        where: { AccountID: account.AccountID },
+      });
+
+      return res.status(200).json(updatedAccount);
+    }
+
+    return res.sendStatus(404);
+  } catch (error) {
+    console.error(error);
+    return res.sendStatus(500);
+  }
+});
+
+app.put("/profile/edit/image", authToken, async (req, res) => {
+  try {
+    const { name, profileimage } = req.body;
+    const uid = req.user.id;
+
+    const donor = await dprofilelist.findOne({
+      where: { UID: uid },
+    });
+
+    if (donor) {
+      await dprofilelist.update(
+        { Name: name, DProfileImage: profileimage },
+        { where: { DonorID: donor.DonorID } }
+      );
+
+      const updatedDonor = await dprofilelist.findOne({
+        where: { DonorID: donor.DonorID },
+      });
+
+      return res.status(200).json(updatedDonor);
+    }
+
+    const account = await rprofilelist.findOne({
+      where: { UID: uid },
+    });
+
+    if (account) {
+      await rprofilelist.update(
+        { Name: name, RProfileImage: profileimage },
+        { where: { AccountID: account.AccountID } }
+      );
+
+      const updatedAccount = await rprofilelist.findOne({
+        where: { AccountID: account.AccountID },
+      });
+
+      return res.status(200).json(updatedAccount);
+    }
+
+    return res.sendStatus(404);
+  } catch (error) {
+    console.error(error);
+    return res.sendStatus(500);
+  }
+});
+
+app.put("/profile/edit/cert", authToken, async (req, res) => {
+  try {
+    const { accountcert } = req.body;
+    const uid = req.user.id;
+
+    const donor = await dprofilelist.findOne({
+      where: { UID: uid },
+    });
+
+    if (donor) {
+      return res.status(400).json({ message: "You are not a recipient" });
+    }
+
+    const account = await rprofilelist.findOne({
+      where: { UID: uid },
+    });
+
+    if (account) {
+      await rprofilelist.update(
+        { AccountCert: accountcert },
+        { where: { AccountID: account.AccountID } }
+      );
+
+      const updatedAccount = await rprofilelist.findOne({
+        where: { AccountID: account.AccountID },
+      });
+
+      return res.status(200).json(updatedAccount);
+    }
+
+    return res.sendStatus(404);
+  } catch (error) {
+    console.error(error);
+    return res.sendStatus(500);
+  }
+});
+
 // START OF DONODRIVE ENDPOINTS
 // POST Create Dono Drive
 app.post("/donodrive/create", authToken, async (req, res) => {
@@ -293,6 +460,8 @@ app.post("/donodrive/create", authToken, async (req, res) => {
     res.status(500).json({ error: "Failed to create donodrive entry" });
   }
 });
+
+//Start of DonoDrive Endpoints
 
 // GET ALL DonoDrive
 app.get("/donodrive/get/all", async (req, res) => {
