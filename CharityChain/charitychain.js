@@ -238,14 +238,13 @@ app.get("/owndprofile/get/", authToken, async (req, res) => {
 
 app.get("/dprofile/:userId", async (req, res) => {
   try {
-    const { userId } = req.params; // Get the userId from the request parameters
-
+    const { userId } = req.params;
     const donorUser = await dprofilelist.findOne({
       where: {
-        DonorID: userId, // Use the userId as the DonorID
+        DonorID: userId,
       },
       attributes: {
-        exclude: ["UID"], // Exclude the UID field from the response
+        exclude: ["UID"],
       },
     });
 
@@ -262,14 +261,14 @@ app.get("/dprofile/:userId", async (req, res) => {
 
 app.get("/rprofile/:userId", async (req, res) => {
   try {
-    const { userId } = req.params; // Get the userId from the request parameters
+    const { userId } = req.params;
 
     const recipientUser = await rprofilelist.findOne({
       where: {
         AccountID: userId,
       },
       attributes: {
-        exclude: ["UID"], // Exclude the UID field from the response
+        exclude: ["UID"],
       },
     });
 
