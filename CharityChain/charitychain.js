@@ -196,7 +196,7 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
   }
 });
 
-// Get profile of a recipient
+// Get profile of a recipient in the current session
 app.get("/rprofile/get/", authToken, async (req, res) => {
   try {
     const user = await rprofilelist.findOne({
@@ -216,7 +216,7 @@ app.get("/rprofile/get/", authToken, async (req, res) => {
   }
 });
 
-// get profile of a donor
+// get profile of a donor in the current session
 app.get("/dprofile/get/", authToken, async (req, res) => {
   try {
     const user = await dprofilelist.findOne({
