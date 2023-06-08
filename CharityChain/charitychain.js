@@ -197,7 +197,7 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
 });
 
 // Get profile of a recipient in the current session
-app.get("/rprofile/get/", authToken, async (req, res) => {
+app.get("/ownrprofile/get/", authToken, async (req, res) => {
   try {
     const user = await rprofilelist.findOne({
       where: {
@@ -217,7 +217,7 @@ app.get("/rprofile/get/", authToken, async (req, res) => {
 });
 
 // get profile of a donor in the current session
-app.get("/dprofile/get/", authToken, async (req, res) => {
+app.get("/owndprofile/get/", authToken, async (req, res) => {
   try {
     const user = await dprofilelist.findOne({
       where: {
@@ -232,6 +232,54 @@ app.get("/dprofile/get/", authToken, async (req, res) => {
     res.json(user);
   } catch (error) {
     console.error("Error retrieving user:", error);
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
+
+app.get("/dprofile/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params; // Get the userId from the request parameters
+
+    const donorUser = await dprofilelist.findOne({
+      where: {
+        DonorID: userId, // Use the userId as the DonorID
+      },
+      attributes: {
+        exclude: ["UID"], // Exclude the UID field from the response
+      },
+    });
+
+    if (!donorUser) {
+      return res.status(404).json({ error: "Donor profile not found" });
+    }
+
+    res.json(donorUser);
+  } catch (error) {
+    console.error("Error retrieving donor profile:", error);
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
+
+app.get("/rprofile/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params; // Get the userId from the request parameters
+
+    const recipientUser = await rprofilelist.findOne({
+      where: {
+        AccountID: userId,
+      },
+      attributes: {
+        exclude: ["UID"], // Exclude the UID field from the response
+      },
+    });
+
+    if (!recipientUser) {
+      return res.status(404).json({ error: "Recipient profile not found" });
+    }
+
+    res.json(recipientUser);
+  } catch (error) {
+    console.error("Error retrieving recipient profile:", error);
     res.status(500).json({ error: "An error occurred" });
   }
 });
