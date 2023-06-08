@@ -1,5 +1,5 @@
 # CharityChain API
- By Neilson Diñoso of SMARTDEEDS [The Blokc](https://www.facebook.com/Theblokcofficial) Hackathon 2023,
+ By Neilson Diñoso of SMARTDEEDS [The Blokc Hackathon 2023](https://www.facebook.com/Theblokcofficial),
 
 Representing [Technological Institute of the Philippines Manila](https://www.tip.edu.ph/)
 
