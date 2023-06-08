@@ -1310,8 +1310,10 @@ app.get("/transact/all", async (req, res) => {
 });
 
 app.listen(3001, () => {
-  console.log("######################################");
-  console.log("*CharityChain is running on port 3001*");
-  console.log("================Version 2=============");
-  console.log("######################################");
+  console.log("##########################################");
+  console.log(
+    "\x1b[37m*\x1b[32mCharity\x1b[36mChain \x1b[37mAPI is running on port 3001*"
+  );
+  console.log("=================\x1b[33mVersion 2\x1b[37m================");
+  console.log("\x1b[37m##########################################");
 });
