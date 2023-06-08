@@ -235,7 +235,7 @@ app.get("/owndprofile/get/", authToken, async (req, res) => {
     res.status(500).json({ error: "An error occurred" });
   }
 });
-
+// get donor profile in search
 app.get("/dprofile/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -258,7 +258,7 @@ app.get("/dprofile/:userId", async (req, res) => {
     res.status(500).json({ error: "An error occurred" });
   }
 });
-
+// get recipient profile in search
 app.get("/rprofile/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
