@@ -1,4 +1,4 @@
 # CharityChain API
  By Neilson Diñoso of SMARTDEEDS
 
-Using express.js and MySQL as database
+Using express.js as framework and MySQL as database
