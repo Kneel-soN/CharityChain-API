@@ -16,7 +16,7 @@ const DonoDrive = sequelize.define(
     DriveID: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true,
+      autoIncrement: false,
     },
     AccountID: {
       type: DataTypes.INTEGER,
