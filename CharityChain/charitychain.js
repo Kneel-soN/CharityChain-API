@@ -53,16 +53,13 @@ const upload = multer({
   }),
 });
 
-// Handle file upload
 app.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  // You can access the file details from req.file
   const imageUrl = "/images/photos/" + req.file.filename;
 
-  // Perform any further operations or send the image URL as the response
   res.json({ imageUrl });
 });
 
