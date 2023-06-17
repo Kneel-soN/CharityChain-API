@@ -13,6 +13,9 @@ const dprofilelist = require("./models/dprofilelist");
 const rprofilelist = require("./models/rprofilelist");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
+
 const { Op } = require("sequelize");
 
 const app = express();
@@ -36,6 +39,31 @@ const connection = mysql.createConnection({
 
 app.get("/", (req, res) => {
   res.send("CharityChain API is now live and running ^-^!");
+});
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, "public/images/photos"); // Set the destination folder
+    },
+    filename: (req, file, cb) => {
+      const fileName = file.originalname.toLowerCase().split(" ").join("-");
+      cb(null, fileName);
+    },
+  }),
+});
+
+// Handle file upload
+app.post("/upload", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  // You can access the file details from req.file
+  const imageUrl = "/images/photos/" + req.file.filename;
+
+  // Perform any further operations or send the image URL as the response
+  res.json({ imageUrl });
 });
 
 //user login
