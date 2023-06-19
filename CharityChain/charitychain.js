@@ -914,14 +914,12 @@ app.put("/donodrive/summary/:DriveID", authToken, async (req, res) => {
       return res.status(404).json({ error: "Unauthorized" });
     }
 
-    // Find the specific drive by DriveID
     const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
     }
 
-    // Check if UID matches
     if (drive.UID !== UID) {
       return res.status(403).json({ error: "Unauthorized" });
     }
