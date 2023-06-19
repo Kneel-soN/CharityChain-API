@@ -944,7 +944,7 @@ app.post("/achievements/create", authToken, async (req, res) => {
     const { AchieveName, Description, AchieveImage } = req.body;
     const UID = req.user.id;
 
-    const existingAccount = await rprofilelist.findOne({
+    const existingAccount = await userlist.findOne({
       where: { UID },
     });
 
@@ -952,10 +952,8 @@ app.post("/achievements/create", authToken, async (req, res) => {
       return res.status(404).json({ error: "Account not found" });
     }
 
-    const AccountID = existingAccount.AccountID;
-
-    // Check of AccountID  and rprofilelist table
-    const existingRecipient = await rprofilelist.findByPk(AccountID);
+    // Check if recipient exists in the userlist table
+    const existingRecipient = await userlist.findByPk(UID);
 
     if (!existingRecipient) {
       return res.status(404).json({ error: "Recipient not found" });
@@ -965,7 +963,7 @@ app.post("/achievements/create", authToken, async (req, res) => {
       AchieveName,
       Description,
       AchieveImage,
-      AccountID,
+      UID,
     });
 
     res.status(201).json(newAchievement);
