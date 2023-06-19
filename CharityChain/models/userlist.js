@@ -22,6 +22,10 @@ const userlist = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    Name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     password: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -34,6 +38,19 @@ const userlist = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    ProfileImage: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
+    AccountCert: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    BIO: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
   {
     tableName: "userlist",
@@ -42,4 +59,5 @@ const userlist = sequelize.define(
     updatedAt: false,
   }
 );
+
 module.exports = userlist;

@@ -9,12 +9,11 @@ const achievers = require("./models/achievers");
 const Badgelist = require("./models/badgelist");
 const transactions = require("./models/transactions");
 const userlist = require("./models/userlist");
-const dprofilelist = require("./models/dprofilelist");
-const rprofilelist = require("./models/rprofilelist");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
+const moment = require("moment");
 
 const { Op } = require("sequelize");
 
@@ -44,25 +43,48 @@ app.get("/", (req, res) => {
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, "public/images/photos"); // Set the destination folder
+      if (file.fieldname === "image") {
+        cb(null, "public/images");
+      } else if (file.fieldname === "pdf") {
+        cb(null, "public/files");
+      } else {
+        cb(new Error("Invalid fieldname"), null);
+      }
     },
     filename: (req, file, cb) => {
-      const fileName = file.originalname.toLowerCase().split(" ").join("-");
+      const originalName = file.originalname.toLowerCase().split(" ").join("-");
+      const uniqueSuffix = moment().format("YYYYMMDDHHmmssSSS");
+      const fileName = `${uniqueSuffix}-${originalName}`;
+
       cb(null, fileName);
     },
   }),
 });
 
-app.post("/upload", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
+app.post(
+  "/upload",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "pdf", maxCount: 1 },
+  ]),
+  (req, res) => {
+    const imageFiles = req.files["image"];
+    const pdfFiles = req.files["pdf"];
+
+    if (!imageFiles || !pdfFiles) {
+      return res
+        .status(400)
+        .json({ error: "Both image and PDF files are required" });
+    }
+
+    // Handle the image and PDF file uploads
+
+    const imageUrl = "/images/photos/" + imageFiles[0].filename;
+    const pdfUrl = "/files/" + pdfFiles[0].filename;
+
+    res.json({ imageUrl, pdfUrl });
   }
-
-  const imageUrl = "/images/photos/" + req.file.filename;
-
-  res.json({ imageUrl });
-});
-
+);
 //user login
 app.post("/login", async (req, res) => {
   try {
@@ -157,60 +179,16 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// Continue donor creation
-app.post("/profile/create/donor/:UID", async (req, res) => {
-  try {
-    const { UID } = req.params;
-    const { name, profileImage, bio } = req.body;
-
-    const user = await userlist.findOne({ where: { UID: UID } });
-    if (!user || user.Role !== "Donor") {
-      return res
-        .status(400)
-        .json({ message: "Invalid user role. Must be a donor." });
-    }
-
-    const existingProfile = await dprofilelist.findOne({ where: { UID: UID } });
-    if (existingProfile) {
-      return res.status(400).json({ message: "Profile already registered." });
-    }
-
-    const newProfile = await dprofilelist.create({
-      UID: UID,
-      Name: name,
-      DProfileImage: profileImage,
-      BIO: bio,
-    });
-
-    res.status(201).json(newProfile);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-// Continue recipient creation
-app.post("/profile/create/recipient/:UID", async (req, res) => {
+// Continue user creation
+app.post("/profile/create/user/:UID", async (req, res) => {
   try {
     const { UID } = req.params;
     const { name, profileImage, bio, accountCert } = req.body;
 
-    const user = await userlist.findOne({ where: { UID: UID } });
-    if (!user || user.Role !== "Recipient") {
-      return res
-        .status(400)
-        .json({ message: "Invalid user role. Must be a recipient." });
-    }
-
-    const existingProfile = await rprofilelist.findOne({ where: { UID: UID } });
-    if (existingProfile) {
-      return res.status(400).json({ message: "Profile already registered." });
-    }
-
-    const newProfile = await rprofilelist.create({
+    const newProfile = await userlist.create({
       UID: UID,
       Name: name,
-      RProfileImage: profileImage,
+      ProfileImage: profileImage,
       AccountCert: accountCert,
       BIO: bio,
     });
@@ -223,9 +201,9 @@ app.post("/profile/create/recipient/:UID", async (req, res) => {
 });
 
 // Get profile of a recipient in the current session
-app.get("/ownrprofile/get/", authToken, async (req, res) => {
+app.get("/ownprofile/get/", authToken, async (req, res) => {
   try {
-    const user = await rprofilelist.findOne({
+    const user = await userlist.findOne({
       where: {
         UID: req.user.id,
       },
@@ -242,69 +220,26 @@ app.get("/ownrprofile/get/", authToken, async (req, res) => {
   }
 });
 
-// get profile of a donor in the current session
-app.get("/owndprofile/get/", authToken, async (req, res) => {
-  try {
-    const user = await dprofilelist.findOne({
-      where: {
-        UID: req.user.id, // Use the decoded user ID from the JWT token
-      },
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    res.json(user);
-  } catch (error) {
-    console.error("Error retrieving user:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
 // get donor profile in search
-app.get("/dprofile/:userId", async (req, res) => {
+app.get("/profile/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    const donorUser = await dprofilelist.findOne({
+    const donorUser = await userlist.findOne({
       where: {
-        DonorID: userId,
+        UID: userId,
       },
       attributes: {
-        exclude: ["UID"],
+        exclude: ["UID", "password"],
       },
     });
 
     if (!donorUser) {
-      return res.status(404).json({ error: "Donor profile not found" });
+      return res.status(404).json({ error: "Profile not found" });
     }
 
     res.json(donorUser);
   } catch (error) {
     console.error("Error retrieving donor profile:", error);
-    res.status(500).json({ error: "An error occurred" });
-  }
-});
-// get recipient profile in search
-app.get("/rprofile/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const recipientUser = await rprofilelist.findOne({
-      where: {
-        AccountID: userId,
-      },
-      attributes: {
-        exclude: ["UID"],
-      },
-    });
-
-    if (!recipientUser) {
-      return res.status(404).json({ error: "Recipient profile not found" });
-    }
-
-    res.json(recipientUser);
-  } catch (error) {
-    console.error("Error retrieving recipient profile:", error);
     res.status(500).json({ error: "An error occurred" });
   }
 });
@@ -314,38 +249,16 @@ app.put("/profile/edit/name", authToken, async (req, res) => {
     const { name } = req.body;
     const uid = req.user.id;
 
-    const donor = await dprofilelist.findOne({
+    const user = await userlist.findOne({
       where: { UID: uid },
     });
 
-    if (donor) {
-      await dprofilelist.update(
-        { Name: name },
-        { where: { DonorID: donor.DonorID } }
-      );
+    if (user) {
+      await userlist.update({ Name: name }, { where: { UID: uid } });
 
-      const updatedDonor = await dprofilelist.findOne({
-        where: { DonorID: donor.DonorID },
-      });
+      const updatedUser = await userlist.findOne({ where: { UID: uid } });
 
-      return res.status(200).json(updatedDonor);
-    }
-
-    const account = await rprofilelist.findOne({
-      where: { UID: uid },
-    });
-
-    if (account) {
-      await rprofilelist.update(
-        { Name: name },
-        { where: { AccountID: account.AccountID } }
-      );
-
-      const updatedAccount = await rprofilelist.findOne({
-        where: { AccountID: account.AccountID },
-      });
-
-      return res.status(200).json(updatedAccount);
+      return res.status(200).json(updatedUser);
     }
 
     return res.sendStatus(404);
@@ -357,35 +270,22 @@ app.put("/profile/edit/name", authToken, async (req, res) => {
 
 app.put("/profile/edit/bio", authToken, async (req, res) => {
   try {
-    const { bio } = req.body;
+    const { BIO } = req.body;
     const uid = req.user.id;
 
-    const donor = await dprofilelist.findOne({
+    const user = await userlist.findOne({
       where: { UID: uid },
     });
 
-    if (donor) {
-      return res.status(403).json({ message: "You are not a recipient" });
+    if (!user) {
+      return res.sendStatus(404);
     }
 
-    const account = await rprofilelist.findOne({
-      where: { UID: uid },
-    });
+    await userlist.update({ BIO: BIO }, { where: { UID: uid } });
 
-    if (account) {
-      await rprofilelist.update(
-        { BIO: bio },
-        { where: { AccountID: account.AccountID } }
-      );
+    const updatedUser = await userlist.findOne({ where: { UID: uid } });
 
-      const updatedAccount = await rprofilelist.findOne({
-        where: { AccountID: account.AccountID },
-      });
-
-      return res.status(200).json(updatedAccount);
-    }
-
-    return res.sendStatus(404);
+    return res.status(200).json(updatedUser);
   } catch (error) {
     console.error(error);
     return res.sendStatus(500);
@@ -397,41 +297,22 @@ app.put("/profile/edit/image", authToken, async (req, res) => {
     const { name, profileimage } = req.body;
     const uid = req.user.id;
 
-    const donor = await dprofilelist.findOne({
+    const user = await userlist.findOne({
       where: { UID: uid },
     });
 
-    if (donor) {
-      await dprofilelist.update(
-        { Name: name, DProfileImage: profileimage },
-        { where: { DonorID: donor.DonorID } }
-      );
-
-      const updatedDonor = await dprofilelist.findOne({
-        where: { DonorID: donor.DonorID },
-      });
-
-      return res.status(200).json(updatedDonor);
+    if (!user) {
+      return res.sendStatus(404);
     }
 
-    const account = await rprofilelist.findOne({
-      where: { UID: uid },
-    });
+    await userlist.update(
+      { Name: name, ProfileImage: profileimage },
+      { where: { UID: uid } }
+    );
 
-    if (account) {
-      await rprofilelist.update(
-        { Name: name, RProfileImage: profileimage },
-        { where: { AccountID: account.AccountID } }
-      );
+    const updatedUser = await userlist.findOne({ where: { UID: uid } });
 
-      const updatedAccount = await rprofilelist.findOne({
-        where: { AccountID: account.AccountID },
-      });
-
-      return res.status(200).json(updatedAccount);
-    }
-
-    return res.sendStatus(404);
+    return res.status(200).json(updatedUser);
   } catch (error) {
     console.error(error);
     return res.sendStatus(500);
@@ -443,32 +324,22 @@ app.put("/profile/edit/cert", authToken, async (req, res) => {
     const { accountcert } = req.body;
     const uid = req.user.id;
 
-    const donor = await dprofilelist.findOne({
+    const user = await userlist.findOne({
       where: { UID: uid },
     });
 
-    if (donor) {
-      return res.status(400).json({ message: "You are not a recipient" });
+    if (!user) {
+      return res.sendStatus(404);
     }
 
-    const account = await rprofilelist.findOne({
-      where: { UID: uid },
-    });
+    await userlist.update(
+      { AccountCert: accountcert },
+      { where: { UID: uid } }
+    );
 
-    if (account) {
-      await rprofilelist.update(
-        { AccountCert: accountcert },
-        { where: { AccountID: account.AccountID } }
-      );
+    const updatedUser = await userlist.findOne({ where: { UID: uid } });
 
-      const updatedAccount = await rprofilelist.findOne({
-        where: { AccountID: account.AccountID },
-      });
-
-      return res.status(200).json(updatedAccount);
-    }
-
-    return res.sendStatus(404);
+    return res.status(200).json(updatedUser);
   } catch (error) {
     console.error(error);
     return res.sendStatus(500);
@@ -495,18 +366,16 @@ app.post("/donodrive/create", authToken, async (req, res) => {
 
     const UID = req.user.id;
 
-    const existingAccount = await rprofilelist.findOne({
+    const existingUser = await userlist.findOne({
       where: { UID },
     });
 
-    if (!existingAccount) {
-      return res.status(404).json({ error: "Account not found" });
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const AccountID = existingAccount.AccountID;
-
     const donoDrive = await DonoDrive.create({
-      AccountID,
+      DriveID,
       DriveName,
       Intro,
       Cause,
@@ -519,13 +388,11 @@ app.post("/donodrive/create", authToken, async (req, res) => {
       Urgent,
     });
 
-    const metadata = await userlist.findOne({
-      where: { UID },
-    });
+    const metadata = existingUser.MetaData;
 
     const donoDriveWithMetadata = {
       ...donoDrive.toJSON(),
-      metadata: metadata ? metadata.MetaData : null,
+      metadata: metadata ? metadata : null,
     };
 
     res.status(201).json(donoDriveWithMetadata);
@@ -542,24 +409,13 @@ app.get("/donodrive/get/all", async (req, res) => {
   try {
     const donoDrives = await DonoDrive.findAll({});
 
-    const creatorIds = donoDrives.map((drive) => drive.AccountID);
-    const recipientNames = await rprofilelist.findAll({
-      where: { AccountID: creatorIds },
-    });
-
-    const userIds = recipientNames.map((recipient) => recipient.UID);
+    const creatorIds = donoDrives.map((drive) => drive.UID);
     const metadataList = await userlist.findAll({
-      where: { UID: userIds },
+      where: { UID: creatorIds },
     });
 
     const DrivesWithNamesAndToGo = donoDrives.map((drive) => {
-      const recipientName = recipientNames.find(
-        (creator) => creator.AccountID === drive.AccountID
-      );
-
-      const metadata = metadataList.find(
-        (user) => user.UID === recipientName?.UID
-      );
+      const metadata = metadataList.find((user) => user.UID === drive.UID);
 
       const goal = drive.Goal;
       const raised = drive.Raised;
@@ -582,7 +438,7 @@ app.get("/donodrive/get/all", async (req, res) => {
 
       return {
         DriveID: drive.DriveID,
-        AccountID: drive.AccountID,
+        UID: drive.UID,
         DriveName: drive.DriveName,
         Intro: drive.Intro,
         Cause: drive.Cause,
@@ -590,7 +446,6 @@ app.get("/donodrive/get/all", async (req, res) => {
         Documents: drive.Documents,
         Summary: drive.Summary,
         DateTarget: drive.DateTarget,
-        name: recipientName ? recipientName.Name : null,
         metadata: metadata ? metadata.MetaData : null,
         Urgent: drive.Urgent,
         infolist,
@@ -615,9 +470,9 @@ app.get("/donodrive/get/urgent", async (req, res) => {
       limit: 2,
     });
 
-    const creatorIds = donoDrives.map((drive) => drive.AccountID);
-    const recipientNames = await rprofilelist.findAll({
-      where: { AccountID: creatorIds },
+    const creatorIds = donoDrives.map((drive) => drive.UID); // Update to use UID
+    const recipientNames = await userlist.findAll({
+      where: { UID: creatorIds }, // Update to use UID
     });
 
     const metadataPromises = recipientNames.map((recipient) => {
@@ -630,7 +485,7 @@ app.get("/donodrive/get/urgent", async (req, res) => {
 
     const DriveswInfo = donoDrives.map((drive) => {
       const recipientName = recipientNames.find(
-        (creator) => creator.AccountID === drive.AccountID
+        (creator) => creator.UID === drive.UID // Update to use UID
       );
 
       const metadata = metadataResults.find(
@@ -660,7 +515,7 @@ app.get("/donodrive/get/urgent", async (req, res) => {
         DateTarget: drive.DateTarget,
         Urgent: drive.Urgent,
         DriveID: drive.DriveID,
-        AccountID: drive.AccountID,
+        UID: drive.UID,
         DriveName: drive.DriveName,
         Intro: drive.Intro,
         Cause: drive.Cause,
@@ -697,9 +552,9 @@ app.get("/donodrive/get/urgent-exclude", async (req, res) => {
       order: [["DriveID", "ASC"]],
     });
 
-    const creatorIds = donoDrives.map((drive) => drive.AccountID);
-    const recipientNames = await rprofilelist.findAll({
-      where: { AccountID: creatorIds },
+    const creatorIds = donoDrives.map((drive) => drive.UID);
+    const recipientNames = await userlist.findAll({
+      where: { UID: creatorIds },
     });
 
     const userIds = recipientNames.map((recipient) => recipient.UID);
@@ -709,7 +564,7 @@ app.get("/donodrive/get/urgent-exclude", async (req, res) => {
 
     const dinfo = donoDrives.map((drive) => {
       const recipientName = recipientNames.find(
-        (creator) => creator.AccountID === drive.AccountID
+        (creator) => creator.UID === drive.UID
       );
 
       const metadata = metadataList.find(
@@ -739,7 +594,7 @@ app.get("/donodrive/get/urgent-exclude", async (req, res) => {
         DateTarget: drive.DateTarget,
         Urgent: drive.Urgent,
         DriveID: drive.DriveID,
-        AccountID: drive.AccountID,
+        UID: drive.UID,
         DriveName: drive.DriveName,
         Intro: drive.Intro,
         Cause: drive.Cause,
@@ -762,21 +617,21 @@ app.get("/donodrive/get/urgent-exclude", async (req, res) => {
 });
 
 // DonoDrives of Specific Account/Recipient
-app.get("/donodrive/specific/:accountID", async (req, res) => {
+app.get("/donodrive/specific/:UID", async (req, res) => {
   try {
-    const accountID = req.params.accountID;
+    const UID = req.params.UID;
 
     const drives = await DonoDrive.findAll({
-      where: { AccountID: accountID },
+      where: { UID: UID },
     });
 
     if (!drives || drives.length === 0) {
       return res.status(404).json({ error: "DonoDrive records not found" });
     }
 
-    const creatorIds = drives.map((drive) => drive.AccountID);
-    const recipientNames = await rprofilelist.findAll({
-      where: { AccountID: creatorIds },
+    const creatorIds = drives.map((drive) => drive.UID);
+    const recipientNames = await userlist.findAll({
+      where: { UID: creatorIds },
     });
 
     const userIds = recipientNames.map((recipient) => recipient.UID);
@@ -791,7 +646,7 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
         const toGo = goal - raised;
 
         const recipientName = recipientNames.find(
-          (creator) => creator.AccountID === drive.AccountID
+          (creator) => creator.UID === drive.UID
         );
 
         const metadata = metadataList.find(
@@ -814,7 +669,7 @@ app.get("/donodrive/specific/:accountID", async (req, res) => {
         ];
 
         const dinfo = {
-          AccountID: drive.AccountID,
+          UID: drive.UID,
           DriveID: drive.DriveID,
           DriveName: drive.DriveName,
           Intro: drive.Intro,
@@ -857,8 +712,8 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
     const raised = drive.Raised;
     const toGo = goal - raised;
 
-    const recipientName = await rprofilelist.findOne({
-      where: { AccountID: drive.AccountID },
+    const recipientName = await userlist.findOne({
+      where: { UID: drive.UID },
     });
 
     const metadata = await userlist.findOne({
@@ -882,7 +737,7 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
 
     const dinfo = {
       DriveID: drive.DriveID,
-      AccountID: drive.AccountID,
+      UID: drive.UID,
       DriveName: drive.DriveName,
       Intro: drive.Intro,
       Cause: drive.Cause,
@@ -903,13 +758,13 @@ app.get("/donodrive/get/drive/:DriveID", async (req, res) => {
   }
 });
 
-app.put("/donodrive/rename/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/rename/:DriveID", authToken, async (req, res) => {
+  const { DriveID } = req.params;
   const { driveName } = req.body;
 
   try {
     const UID = req.user.id;
-    const existingAccount = await rprofilelist.findOne({
+    const existingAccount = await userlist.findOne({
       where: { UID },
     });
 
@@ -917,17 +772,15 @@ app.put("/donodrive/rename/:driveId", authToken, async (req, res) => {
       return res.status(404).json({ error: "Unauthorized" });
     }
 
-    const AccountID = existingAccount.AccountID;
-
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
     }
 
-    // Check if AccountID matches
-    if (drive.AccountID !== AccountID) {
+    // Check if UID matches
+    if (drive.UID !== UID) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -941,13 +794,13 @@ app.put("/donodrive/rename/:driveId", authToken, async (req, res) => {
   }
 });
 
-app.put("/donodrive/intro/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/intro/DriveID", authToken, async (req, res) => {
+  const { DriveID } = req.params;
   const { intro } = req.body;
 
   try {
     const UID = req.user.id;
-    const existingAccount = await rprofilelist.findOne({
+    const existingAccount = await userlist.findOne({
       where: { UID },
     });
 
@@ -955,17 +808,15 @@ app.put("/donodrive/intro/:driveId", authToken, async (req, res) => {
       return res.status(404).json({ error: "Unauthorized" });
     }
 
-    const AccountID = existingAccount.AccountID;
-
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
     }
 
-    // Check if AccountID matches
-    if (drive.AccountID !== AccountID) {
+    // Check if UID matches
+    if (drive.UID !== UID) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -979,13 +830,13 @@ app.put("/donodrive/intro/:driveId", authToken, async (req, res) => {
   }
 });
 
-app.put("/donodrive/cause/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/cause/:DriveID", authToken, async (req, res) => {
+  const { DriveID } = req.params;
   const { cause } = req.body;
 
   try {
     const UID = req.user.id;
-    const existingAccount = await rprofilelist.findOne({
+    const existingAccount = await userlist.findOne({
       where: { UID },
     });
 
@@ -993,17 +844,13 @@ app.put("/donodrive/cause/:driveId", authToken, async (req, res) => {
       return res.status(404).json({ error: "Unauthorized" });
     }
 
-    const AccountID = existingAccount.AccountID;
-
-    // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
     }
 
-    // Check if AccountID matches
-    if (drive.AccountID !== AccountID) {
+    if (drive.UID !== UID) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -1017,51 +864,13 @@ app.put("/donodrive/cause/:driveId", authToken, async (req, res) => {
   }
 });
 
-app.put("/donodrive/driveimage/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
-  const { driveImage } = req.body;
-
-  try {
-    const UID = req.user.id;
-    const existingAccount = await rprofilelist.findOne({
-      where: { UID },
-    });
-
-    if (!existingAccount) {
-      return res.status(404).json({ error: "Unauthorized" });
-    }
-
-    const AccountID = existingAccount.AccountID;
-
-    // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
-
-    if (!drive) {
-      return res.status(404).json({ error: "Drive not found" });
-    }
-
-    // Check if AccountID matches
-    if (drive.AccountID !== AccountID) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-
-    drive.DriveImage = driveImage;
-    await drive.save();
-
-    res.json(drive);
-  } catch (error) {
-    console.error("Error updating drive:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-app.put("/donodrive/documents/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+app.put("/donodrive/documents", authToken, async (req, res) => {
+  const { DriveID } = req.params;
   const { documents } = req.body;
 
   try {
     const UID = req.user.id;
-    const existingAccount = await rprofilelist.findOne({
+    const existingAccount = await userlist.findOne({
       where: { UID },
     });
 
@@ -1069,17 +878,15 @@ app.put("/donodrive/documents/:driveId", authToken, async (req, res) => {
       return res.status(404).json({ error: "Unauthorized" });
     }
 
-    const AccountID = existingAccount.AccountID;
-
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
     }
 
-    // Check if AccountID matches
-    if (drive.AccountID !== AccountID) {
+    // Check if UID matches
+    if (drive.UID !== UID) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -1092,13 +899,14 @@ app.put("/donodrive/documents/:driveId", authToken, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-app.put("/donodrive/summary/:driveId", authToken, async (req, res) => {
-  const { driveId } = req.params;
+
+app.put("/donodrive/summary/:DriveID", authToken, async (req, res) => {
+  const { DriveID } = req.params;
   const { summary } = req.body;
 
   try {
     const UID = req.user.id;
-    const existingAccount = await rprofilelist.findOne({
+    const existingAccount = await userlist.findOne({
       where: { UID },
     });
 
@@ -1106,17 +914,15 @@ app.put("/donodrive/summary/:driveId", authToken, async (req, res) => {
       return res.status(404).json({ error: "Unauthorized" });
     }
 
-    const AccountID = existingAccount.AccountID;
-
     // Find the specific drive by DriveID
-    const drive = await DonoDrive.findByPk(driveId);
+    const drive = await DonoDrive.findByPk(DriveID);
 
     if (!drive) {
       return res.status(404).json({ error: "Drive not found" });
     }
 
-    // Check if AccountID matches
-    if (drive.AccountID !== AccountID) {
+    // Check if UID matches
+    if (drive.UID !== UID) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -1172,10 +978,19 @@ app.post("/achievements/create", authToken, async (req, res) => {
 // POST AA1
 app.post("/achievements/award", authToken, async (req, res) => {
   try {
-    const { DonorID, AchieveID } = req.body;
+    const { AchieveID } = req.body;
+    const UID = req.user.id;
+
+    const existingAccount = await userlist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Account not found" });
+    }
 
     const newAchiever = await achievers.create({
-      DonorID,
+      UID,
       AchieveID,
     });
 
@@ -1192,7 +1007,7 @@ app.post("/badges/create", authToken, async (req, res) => {
   const UID = req.user.id;
 
   try {
-    const existingAccount = await rprofilelist.findOne({
+    const existingAccount = await userlist.findOne({
       where: { UID },
     });
 
@@ -1200,12 +1015,10 @@ app.post("/badges/create", authToken, async (req, res) => {
       return res.status(404).json({ error: "Account not found" });
     }
 
-    const AccountID = existingAccount.AccountID;
-
     const newBadge = await Badgelist.create({
       BadgeImage,
       BadgeDesc,
-      AccountID,
+      UID,
     });
 
     res.json(newBadge);
@@ -1216,10 +1029,10 @@ app.post("/badges/create", authToken, async (req, res) => {
 });
 
 // POST TD1
-app.post("/transact/donate/:driveID", authToken, async (req, res) => {
+app.post("/transact/donate/:DriveID", authToken, async (req, res) => {
   const { Amount, DateDonated } = req.body;
-  const DriveID = req.params.driveID;
-  const DonorID = req.user.id;
+  const DriveID = req.params.DriveID;
+  const UID = req.user.id;
 
   try {
     const drive = await DonoDrive.findOne({ where: { DriveID } });
@@ -1227,8 +1040,16 @@ app.post("/transact/donate/:driveID", authToken, async (req, res) => {
       return res.status(404).json({ error: "Drive not found" });
     }
 
+    const existingAccount = await userlist.findOne({
+      where: { UID },
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
     const donation = await transactions.create({
-      DonorID,
+      UID: UID,
       DriveID,
       Amount,
       DateDonated,
@@ -1244,22 +1065,26 @@ app.post("/transact/donate/:driveID", authToken, async (req, res) => {
     res.status(500).json({ error: "An error occurred" });
   }
 });
+
 // Transactions of specific drive
-app.get("/transact/drive/:driveId", async (req, res) => {
-  const driveId = req.params.driveId;
+app.get("/transact/drive/:DriveID", async (req, res) => {
+  const DriveID = req.params.DriveID;
 
   try {
+    const drive = await DonoDrive.findByPk(DriveID);
+    if (!drive) {
+      return res.status(404).json({ error: "Drive does not exist" });
+    }
+
     const driveTransactions = await transactions.findAll({
       where: {
-        DriveID: driveId,
+        DriveID: DriveID,
       },
     });
 
-    const donorIds = driveTransactions.map(
-      (transaction) => transaction.DonorID
-    );
-    const donorNames = await dprofilelist.findAll({
-      where: { DonorID: donorIds },
+    const donorIds = driveTransactions.map((transaction) => transaction.UID);
+    const donorNames = await userlist.findAll({
+      where: { UID: donorIds },
     });
 
     const driveIds = driveTransactions.map(
@@ -1271,16 +1096,16 @@ app.get("/transact/drive/:driveId", async (req, res) => {
 
     const twinfo = driveTransactions.map((transaction) => {
       const donorName = donorNames.find(
-        (donor) => donor.DonorID === transaction.DonorID
+        (donor) => donor.UID === transaction.UID
       );
       const driveName = driveNames.find(
         (drive) => drive.DriveID === transaction.DriveID
       );
 
       return {
-        TransactionID: transaction.TransactionID,
+        TransactionID: transaction.TransactID,
         DriveID: transaction.DriveID,
-        DonorID: transaction.DonorID,
+        UID: transaction.UID,
         Amount: transaction.Amount,
         DateDonated: transaction.DateDonated,
         From: donorName ? donorName.Name : null,
@@ -1295,18 +1120,18 @@ app.get("/transact/drive/:driveId", async (req, res) => {
   }
 });
 
-app.get("/transact/ofdonor/:donorId", async (req, res) => {
-  const donorId = req.params.donorId;
+app.get("/transact/ofdonor/:UID", async (req, res) => {
+  const UID = req.params.UID;
 
   try {
     const driveTransactions = await transactions.findAll({
       where: {
-        DonorID: donorId,
+        UID: UID,
       },
     });
 
-    const donorName = await dprofilelist.findOne({
-      where: { DonorID: donorId },
+    const donorName = await userlist.findOne({
+      where: { UID: UID },
     });
 
     const driveIds = driveTransactions.map(
@@ -1324,7 +1149,7 @@ app.get("/transact/ofdonor/:donorId", async (req, res) => {
       return {
         TransactionID: transaction.TransactionID,
         DriveID: transaction.DriveID,
-        DonorID: transaction.DonorID,
+        UID: transaction.UID,
         Amount: transaction.Amount,
         DateDonated: transaction.DateDonated,
         DonorName: donorName ? donorName.Name : null,
@@ -1343,11 +1168,9 @@ app.get("/transact/all", async (req, res) => {
   try {
     const driveTransactions = await transactions.findAll();
 
-    const donorIds = driveTransactions.map(
-      (transaction) => transaction.DonorID
-    );
-    const donorNames = await dprofilelist.findAll({
-      where: { DonorID: donorIds },
+    const donorIds = driveTransactions.map((transaction) => transaction.UID);
+    const donorNames = await userlist.findAll({
+      where: { UID: donorIds },
     });
 
     const driveIds = driveTransactions.map(
@@ -1359,7 +1182,7 @@ app.get("/transact/all", async (req, res) => {
 
     const twinfo = driveTransactions.map((transaction) => {
       const donorName = donorNames.find(
-        (donor) => donor.DonorID === transaction.DonorID
+        (donor) => donor.UID === transaction.UID
       );
       const driveName = driveNames.find(
         (drive) => drive.DriveID === transaction.DriveID
@@ -1368,7 +1191,7 @@ app.get("/transact/all", async (req, res) => {
       return {
         TransactionID: transaction.TransactionID,
         DriveID: transaction.DriveID,
-        DonorID: transaction.DonorID,
+        UID: transaction.UID,
         Amount: transaction.Amount,
         DateDonated: transaction.DateDonated,
         From: donorName ? donorName.Name : null,
@@ -1388,6 +1211,6 @@ app.listen(3001, () => {
   console.log(
     "\x1b[37m*\x1b[32mCharity\x1b[36mChain \x1b[37mAPI is running on port 3001*"
   );
-  console.log("=================\x1b[33mVersion 2\x1b[37m================");
+  console.log("=================\x1b[33mVersion 3\x1b[37m================");
   console.log("\x1b[37m##########################################");
 });

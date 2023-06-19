@@ -18,7 +18,7 @@ const transactions = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
-    DonorID: {
+    UID: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
